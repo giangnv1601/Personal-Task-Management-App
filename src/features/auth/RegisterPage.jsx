@@ -1,7 +1,7 @@
 import supabase from "../../api/supabaseClient.js"
 import { useForm } from 'react-hook-form'
 import { toast } from 'sonner';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
 const RegisterPage = () => {
   const { register, handleSubmit, watch, formState: { errors, isSubmitting } } = useForm() 
@@ -113,7 +113,7 @@ const RegisterPage = () => {
               })}
             />
             <label htmlFor="agree" className="text-sm">
-              Tôi đồng ý với <a href="#" className="text-blue-600 hover:underline">Điều khoản &amp; Chính sách</a>
+              Tôi đồng ý với <Link to="#" className="text-blue-600 hover:underline">Điều khoản &amp; Chính sách</Link>
             </label>
           </div>
           {errors.agree && (
@@ -130,7 +130,7 @@ const RegisterPage = () => {
           </button>
 
           <p className="text-center text-sm text-gray-600">
-            Đã có tài khoản? <a href="/login" className="text-blue-600 hover:underline">Đăng nhập</a>
+            Đã có tài khoản? <Link to="/login" className="text-blue-600 hover:underline">Đăng nhập</Link>
           </p>
         </form>
       </div>
