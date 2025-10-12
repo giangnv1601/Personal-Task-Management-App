@@ -1,7 +1,22 @@
-import { createClient } from "@supabase/supabase-js";
+import axios from 'axios'
 
-import { SUPABASE_URL, SUPABASE_ANON_KEY } from "../utils/constants.js";
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/utils/constants.js'
 
-const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+  const msg = 'Missing SUPABASE_URL or SUPABASE_ANON_KEY.'
+  console.error(msg, { SUPABASE_URL, SUPABASE_ANON_KEY })
+  throw new Error(msg)
+}
 
-export default supabase;
+// axios instance dùng cho Supabase REST + Auth endpoints
+const supabaseApi = axios.create({
+  baseURL: SUPABASE_URL,
+  headers: {
+    Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+    apikey: SUPABASE_ANON_KEY,
+    'Content-Type': 'application/json',
+  },
+  timeout: 10000,
+})
+
+export default supabaseApi
