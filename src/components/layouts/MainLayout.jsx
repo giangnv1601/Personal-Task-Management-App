@@ -1,8 +1,8 @@
 import { LayoutDashboard, CircleChevronDown, User, LogOut } from 'lucide-react'
 import { NavLink, Outlet, useNavigate } from "react-router-dom"
 
-import supabase from "../../api/supabaseClient"
-import IconSquare from "../ui/IconSquare.jsx"
+import supabase from "@/api/supabaseClient"
+import IconSquare from "@/components/ui/IconSquare"
 
 const MainLayout = () => {
   const navigate = useNavigate()

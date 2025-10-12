@@ -2,7 +2,7 @@ import { useForm } from "react-hook-form"
 import { Link, useNavigate } from "react-router-dom"
 import { toast } from "sonner"
 
-import supabase from "../../api/supabaseClient.js"
+import supabase from "@/api/supabaseClient.js"
 
 const PASSWORD_RULE = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^\w\s]).{8,}$/
 

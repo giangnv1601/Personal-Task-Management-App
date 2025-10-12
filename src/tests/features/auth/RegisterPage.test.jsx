@@ -13,7 +13,7 @@ jest.mock('sonner', () => ({
 import { toast } from 'sonner'
 
 // Mock supabase client
-jest.mock('../../../api/supabaseClient.js', () => ({
+jest.mock('@/api/supabaseClient.js', () => ({
   __esModule: true,
   default: {
     auth: {
@@ -21,8 +21,8 @@ jest.mock('../../../api/supabaseClient.js', () => ({
     },
   },
 }))
-import supabase from '../../../api/supabaseClient.js'
-import RegisterPage from '../../../features/auth/RegisterPage.jsx'
+import supabase from '@/api/supabaseClient.js'
+import RegisterPage from '@/features/auth/RegisterPage.jsx'
 
 // Mock useNavigate
 const mockNavigate = jest.fn()
