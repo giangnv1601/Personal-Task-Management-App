@@ -1,10 +1,11 @@
 import { Routes, Route, Navigate } from "react-router-dom"
 import { Toaster } from "sonner"
-import RegisterPage from "./features/auth/RegisterPage.jsx"
-import LoginPage from "./features/auth/LoginPage.jsx"
+
 import MainLayout from "./components/layouts/MainLayout.jsx"
-import Dashboard from "./pages/Dashboard.jsx"
+import LoginPage from "./features/auth/LoginPage.jsx"
+import RegisterPage from "./features/auth/RegisterPage.jsx"
 import TasksPage from "./features/tasks/TasksPage.jsx"
+import Dashboard from "./pages/Dashboard.jsx"
 import Profile from "./pages/Profile.jsx"
 
 function App() {

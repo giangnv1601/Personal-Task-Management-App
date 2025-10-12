@@ -2,7 +2,15 @@
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
-import RegisterPage from '../../../features/auth/RegisterPage.jsx'
+// Mock sonner toast
+jest.mock('sonner', () => ({
+  Toaster: () => null,
+  toast: Object.assign(jest.fn(), {
+    success: jest.fn(),
+    error: jest.fn(),
+  }),
+}))
+import { toast } from 'sonner'
 
 // Mock supabase client
 jest.mock('../../../api/supabaseClient.js', () => ({
@@ -14,6 +22,7 @@ jest.mock('../../../api/supabaseClient.js', () => ({
   },
 }))
 import supabase from '../../../api/supabaseClient.js'
+import RegisterPage from '../../../features/auth/RegisterPage.jsx'
 
 // Mock useNavigate
 const mockNavigate = jest.fn()
@@ -22,15 +31,7 @@ jest.mock('react-router-dom', () => {
   return { ...actual, useNavigate: () => mockNavigate }
 })
 
-// Mock sonner toast
-jest.mock('sonner', () => ({
-  Toaster: () => null,
-  toast: Object.assign(jest.fn(), {
-    success: jest.fn(),
-    error: jest.fn(),
-  }),
-}))
-import { toast } from 'sonner'
+
 
 const renderUI = () =>
   render(
