@@ -1,59 +1,66 @@
 import supabase from "../../api/supabaseClient.js"
-import { useForm } from 'react-hook-form'
-import { toast } from 'sonner';
-import { Link, useNavigate } from 'react-router-dom';
+import { useForm } from "react-hook-form"
+import { toast } from "sonner"
+import { Link, useNavigate } from "react-router-dom"
+
+const PASSWORD_RULE = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^\w\s]).{8,}$/
 
 const RegisterPage = () => {
-  const { register, handleSubmit, watch, formState: { errors, isSubmitting } } = useForm() 
-  const navigate = useNavigate();
+  const {
+    register,
+    handleSubmit,
+    watch,
+    setValue,
+    clearErrors,
+    formState: { errors, isSubmitting }
+  } = useForm({ defaultValues: { agree: false }})
 
-  const password = watch("password");
-  
+  const navigate = useNavigate()
+  const password = watch("password", "")
+  const agreed = watch("agree", false)
+
   const onSubmit = async ({ email, password }) => {
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-    })
-    if (error) {
-      toast.error(error.message)
-      return
+    try {
+      const { error } = await supabase.auth.signUp({ email, password })
+      if (error) throw error
+      toast.success("Đăng ký thành công!")
+      navigate("/login", { replace: true, state: { notice: "Đăng ký thành công!" } })
+    } catch (err) {
+      toast.error(err?.message || "Không thể đăng ký, vui lòng thử lại!")
     }
-    toast.success('Đăng ký thành công!')
-    navigate('/login', {
-      replace: true,
-      state: { notice: 'Đăng ký thành công!' }
-    })
   }
-  
-  return (
-    <div className='min-h-screen flex items-center justify-center bg-gray-100'>
-      <div className='w-full max-w-md bg-white shadow-lg p-8'>
-        {/* Title */}
-        <h1 className='text-2xl font-extrabold text-center mb-6'>Đăng kí tài khoản</h1>
 
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-gray-100 p-4">
+      <div className="w-full max-w-md bg-white shadow-lg p-8 rounded-xl">
+        <h1 className="text-2xl font-extrabold text-center mb-6">Đăng ký tài khoản</h1>
+
+        <form
+          onSubmit={handleSubmit(onSubmit)}
+          className="space-y-4"
+          noValidate
+          aria-busy={isSubmitting}
+        >
           {/* Email */}
           <div>
             <label htmlFor="email" className="block text-sm font-medium mb-1">Email</label>
             <input
-              type="email"
-              name="email"
               id="email"
+              type="email"
               placeholder="Nhập email"
-              className='w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-300'
+              autoComplete="email"
+              disabled={isSubmitting}
+              aria-invalid={!!errors.email}
+              className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-300 disabled:opacity-60"
               {...register("email", {
                 required: "Email không được để trống",
                 pattern: {
-                  value: /^[\w-.]+@([\w-]+\.)+[\w-]{2,4}$/,
-                  message: "Email không hợp lệ",
+                  value: /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/i,
+                  message: "Email không hợp lệ"
                 }
               })}
             />
-            {errors.email && (
-              <p className="text-red-500 text-sm mt-1">
-                {errors.email.message}
-              </p>
-            )}
+            {errors.email && <p className="text-red-500 text-sm mt-1">{errors.email.message}</p>}
           </div>
 
           {/* Password */}
@@ -61,72 +68,78 @@ const RegisterPage = () => {
             <label htmlFor="password" className="block text-sm font-medium mb-1">Mật khẩu</label>
             <input
               id="password"
-              name="password"
               type="password"
               placeholder="Nhập mật khẩu"
-              className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-300"
+              autoComplete="new-password"
+              disabled={isSubmitting}
+              aria-invalid={!!errors.password}
+              className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-300 disabled:opacity-60"
               {...register("password", {
                 required: "Mật khẩu không được để trống",
-                minLength: {
-                  value: 8,
-                  message: "Mật khẩu phải có ít nhất 8 ký tự",
-                },
+                validate: (v) =>
+                  PASSWORD_RULE.test(v) ||
+                  "Ít nhất 8 ký tự, gồm chữ hoa, chữ thường, số và ký tự đặc biệt"
               })}
             />
+            {errors.password && <p className="text-red-500 text-sm mt-1">{errors.password.message}</p>}
           </div>
-          {errors.password && (
-            <p className="text-red-500 text-sm mt-1">
-              {errors.password.message}
-            </p>
-          )}
 
           {/* Confirm Password */}
           <div>
             <label htmlFor="confirm" className="block text-sm font-medium mb-1">Nhập lại mật khẩu</label>
             <input
               id="confirm"
-              name="confirm"
               type="password"
               placeholder="Nhập lại mật khẩu"
-              className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-300"
+              autoComplete="new-password"
+              disabled={isSubmitting}
+              aria-invalid={!!errors.confirm}
+              className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-300 disabled:opacity-60"
               {...register("confirm", {
                 required: "Vui lòng nhập lại mật khẩu",
-                validate: (value) =>
-                    value === password || "Mật khẩu không khớp",
+                validate: (v) => v === password || "Mật khẩu không khớp"
               })}
             />
+            {errors.confirm && <p className="text-red-500 text-sm mt-1">{errors.confirm.message}</p>}
           </div>
-          {errors.confirm && (
-            <p className="text-red-500 text-sm mt-1">
-              {errors.confirm.message}
-            </p>
-          )}
 
           {/* Agree to terms */}
-          <div className="flex items-start space-x-2">
+          <div className="flex items-start gap-2">
             <input
               id="agree"
               type="checkbox"
               className="mt-1 h-4 w-4"
-              {...register("agree", { 
-                required: "Bạn phải đồng ý với điều khoản"
+              disabled={isSubmitting}
+              aria-invalid={!!errors.agree}
+              {...register("agree", {
+                validate: (v) => v === true || "Bạn phải đồng ý với điều khoản"
               })}
+              onChange={(e) => {
+                setValue("agree", e.target.checked, { shouldValidate: true })
+                if (e.target.checked) clearErrors("agree")
+              }}
             />
             <label htmlFor="agree" className="text-sm">
-              Tôi đồng ý với <Link to="#" className="text-blue-600 hover:underline">Điều khoản &amp; Chính sách</Link>
+              Tôi đồng ý với{" "}
+              <Link to="#" className="text-blue-600 hover:underline">Điều khoản &amp; Chính sách</Link>
             </label>
           </div>
-          {errors.agree && (
-            <p className="text-red-500 text-sm mt-1">{errors.agree.message}</p>
-          )}
+          {errors.agree && <p className="text-red-500 text-sm mt-1">{errors.agree.message}</p>}
 
           {/* Submit Button */}
           <button
             type="submit"
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg font-medium mt-2"
-            disabled={!watch("agree") || isSubmitting}
+            className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg font-medium mt-2 flex items-center justify-center gap-2 disabled:bg-blue-400"
+            disabled={!agreed || isSubmitting}
           >
-            Đăng ký
+            {isSubmitting ? (
+              <>
+                <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                Đang đăng ký…
+              </>
+            ) : (
+              "Đăng ký"
+            )}
           </button>
 
           <p className="text-center text-sm text-gray-600">
