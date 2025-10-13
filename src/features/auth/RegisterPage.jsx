@@ -32,9 +32,9 @@ const RegisterPage = () => {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100 p-4">
-      <div className="w-full max-w-md bg-white shadow-lg p-8 rounded-xl">
-        <h1 className="text-2xl font-extrabold text-center mb-6">Đăng ký tài khoản</h1>
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 p-6">
+      <div className="w-full max-w-sm bg-white shadow-lg p-8 rounded-xl">
+        <h1 className="text-3xl font-extrabold text-center mb-6">Đăng ký tài khoản</h1>
 
         <form
           onSubmit={handleSubmit(onSubmit)}
@@ -122,7 +122,7 @@ const RegisterPage = () => {
             />
             <label htmlFor="agree" className="text-sm">
               Tôi đồng ý với{" "}
-              <Link to="#" className="text-blue-600 hover:underline">Điều khoản &amp; Chính sách</Link>
+              <Link to="#" className="text-blue-600 hover:underline font-medium">Điều khoản &amp; Chính sách</Link>
             </label>
           </div>
           {errors.agree && <p className="text-red-500 text-sm mt-1">{errors.agree.message}</p>}
@@ -144,7 +144,7 @@ const RegisterPage = () => {
           </button>
 
           <p className="text-center text-sm text-gray-600">
-            Đã có tài khoản? <Link to="/login" className="text-blue-600 hover:underline">Đăng nhập</Link>
+            Đã có tài khoản? <Link to="/login" className="text-blue-600 hover:underline font-medium">Đăng nhập</Link>
           </p>
         </form>
       </div>

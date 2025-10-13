@@ -1,11 +1,20 @@
 import supabaseApi from '@/api/supabaseClient.js'
 
-const parseErrorMessage = (err) =>
-  err?.response?.data?.message ||
-  err?.response?.data?.error ||
-  err?.response?.data ||
-  err?.message ||
-  String(err)
+const parseErrorMessage = (err) => {
+  const data = err?.response?.data
+  const candidate = data?.message ?? data?.error ?? data ?? err?.message ?? String(err)
+  if (typeof candidate === 'string') return candidate
+  try {
+    // prefer common fields if present
+    if (data && typeof data === 'object') {
+      if (data.msg) return String(data.msg)
+      if (data.error_code) return `${data.error_code}: ${data.msg ?? JSON.stringify(data)}`
+    }
+    return JSON.stringify(candidate)
+  } catch {
+    return String(candidate)
+  }
+}
 
 const okResponse = (res) => ({
   ok: true,
