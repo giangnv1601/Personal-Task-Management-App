@@ -1,8 +1,9 @@
+import React from "react"
 import { useForm } from "react-hook-form"
 import { Link, useNavigate } from "react-router-dom"
 import { toast } from "sonner"
 
-import supabase from "@/api/supabaseClient.js"
+import useAuth from "@/hooks/useAuth.js"
 
 const PASSWORD_RULE = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^\w\s]).{8,}$/
 
@@ -13,20 +14,27 @@ const RegisterPage = () => {
     watch,
     setValue,
     clearErrors,
-    formState: { errors, isSubmitting }
-  } = useForm({ defaultValues: { agree: false }})
+    formState: { errors, isSubmitting },
+  } = useForm({ defaultValues: { agree: false } })
 
   const navigate = useNavigate()
   const password = watch("password", "")
   const agreed = watch("agree", false)
 
+  const { register: doRegister } = useAuth()
+
   const onSubmit = async ({ email, password }) => {
     try {
-      const { error } = await supabase.auth.signUp({ email, password })
-      if (error) throw error
-      toast.success("Đăng ký thành công!")
+      const res = await doRegister({ email, password })
+      if (res.meta.requestStatus === "rejected") {
+        const msg = typeof res.payload === "string" ? res.payload : "Đăng ký thất bại"
+        toast.error(msg)
+        return
+      }
+      toast.success("Đăng ký thành công! Vui lòng đăng nhập.")
       navigate("/login", { replace: true, state: { notice: "Đăng ký thành công!" } })
     } catch (err) {
+      console.error(err)
       toast.error(err?.message || "Không thể đăng ký, vui lòng thử lại!")
     }
   }
@@ -36,12 +44,7 @@ const RegisterPage = () => {
       <div className="w-full max-w-sm bg-white shadow-lg p-8 rounded-xl">
         <h1 className="text-3xl font-extrabold text-center mb-6">Đăng ký tài khoản</h1>
 
-        <form
-          onSubmit={handleSubmit(onSubmit)}
-          className="space-y-4"
-          noValidate
-          aria-busy={isSubmitting}
-        >
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate aria-busy={isSubmitting}>
           {/* Email */}
           <div>
             <label htmlFor="email" className="block text-sm font-medium mb-1">Email</label>
@@ -55,10 +58,7 @@ const RegisterPage = () => {
               className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-300 disabled:opacity-60"
               {...register("email", {
                 required: "Email không được để trống",
-                pattern: {
-                  value: /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/i,
-                  message: "Email không hợp lệ"
-                }
+                pattern: { value: /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/i, message: "Email không hợp lệ" },
               })}
             />
             {errors.email && <p className="text-red-500 text-sm mt-1">{errors.email.message}</p>}
@@ -79,7 +79,7 @@ const RegisterPage = () => {
                 required: "Mật khẩu không được để trống",
                 validate: (v) =>
                   PASSWORD_RULE.test(v) ||
-                  "Ít nhất 8 ký tự, gồm chữ hoa, chữ thường, số và ký tự đặc biệt"
+                  "Ít nhất 8 ký tự, gồm chữ hoa, chữ thường, số và ký tự đặc biệt",
               })}
             />
             {errors.password && <p className="text-red-500 text-sm mt-1">{errors.password.message}</p>}
@@ -98,7 +98,7 @@ const RegisterPage = () => {
               className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-300 disabled:opacity-60"
               {...register("confirm", {
                 required: "Vui lòng nhập lại mật khẩu",
-                validate: (v) => v === password || "Mật khẩu không khớp"
+                validate: (v) => v === password || "Mật khẩu không khớp",
               })}
             />
             {errors.confirm && <p className="text-red-500 text-sm mt-1">{errors.confirm.message}</p>}
@@ -112,9 +112,7 @@ const RegisterPage = () => {
               className="mt-1 h-4 w-4"
               disabled={isSubmitting}
               aria-invalid={!!errors.agree}
-              {...register("agree", {
-                validate: (v) => v === true || "Bạn phải đồng ý với điều khoản"
-              })}
+              {...register("agree", { validate: (v) => v === true || "Bạn phải đồng ý với điều khoản" })}
               onChange={(e) => {
                 setValue("agree", e.target.checked, { shouldValidate: true })
                 if (e.target.checked) clearErrors("agree")
@@ -127,20 +125,18 @@ const RegisterPage = () => {
           </div>
           {errors.agree && <p className="text-red-500 text-sm mt-1">{errors.agree.message}</p>}
 
-          {/* Submit Button */}
+          {/* Submit */}
           <button
             type="submit"
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg font-medium mt-2 flex items-center justify-center gap-2 disabled:bg-blue-400"
             disabled={!agreed || isSubmitting}
+            className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg font-medium mt-2 flex items-center justify-center gap-2 disabled:bg-blue-400"
           >
             {isSubmitting ? (
               <>
                 <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
                 Đang đăng ký…
               </>
-            ) : (
-              "Đăng ký"
-            )}
+            ) : "Đăng ký"}
           </button>
 
           <p className="text-center text-sm text-gray-600">

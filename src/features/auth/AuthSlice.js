@@ -1,6 +1,6 @@
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit'
 
-import { loginUser, logoutUser } from '@/api/userApi.js'
+import { loginUser, logoutUser, signupUser } from '@/api/userApi.js'
 
 // Khối lưu phiên
 const KS = { 
@@ -78,6 +78,19 @@ export const logoutThunk = createAsyncThunk(
   }
 )
 
+// Thunk đăng ký
+export const registerThunk = createAsyncThunk(
+  'auth/register',
+  async ({ email, password, options }, { rejectWithValue }) => {
+    const res = await signupUser({ email, password, options })
+    if (!res.ok) return rejectWithValue(res.error || 'Đăng ký thất bại')
+
+    const { user } = res.data || {}
+    return { user }
+  }
+)
+
+
 // Nạp state ban đầu từ loadInitial()
 const init = loadInitial()
 
@@ -107,48 +120,69 @@ const authSlice = createSlice({
   },
   extraReducers: (builder) => {
     // Login
-    builder.addCase(loginThunk.pending, (state) => { state.loading = true; state.error = null })
-     .addCase(loginThunk.fulfilled, (state, action) => {
-       state.loading = false
-       state.user = action.payload?.user ?? null
-       state.access_token = action.payload?.access_token ?? null
-       state.refresh_token = action.payload?.refresh_token ?? null
-       state.remember = action.payload?.remember // 'local' | 'session'
-       state.isAuthenticated = !!state.access_token
-       // Lưu vào localStorage hoặc sessionStorage tuỳ remember
-       persistSession({
-         remember: state.remember,
-         access_token: state.access_token,
-         refresh_token: state.refresh_token,
-         user: state.user,
-       })
-     })
-     .addCase(loginThunk.rejected, (state, action) => {
-       state.loading = false
-       state.error = action.payload || 'Đăng nhập thất bại'
-     })
+    builder
+      .addCase(loginThunk.pending, (state) => { state.loading = true; state.error = null })
+      .addCase(loginThunk.fulfilled, (state, action) => {
+        state.loading = false
+        state.user = action.payload?.user ?? null
+        state.access_token = action.payload?.access_token ?? null
+        state.refresh_token = action.payload?.refresh_token ?? null
+        state.remember = action.payload?.remember // 'local' | 'session'
+        state.isAuthenticated = !!state.access_token
+        // Lưu vào localStorage hoặc sessionStorage tuỳ remember
+        persistSession({
+          remember: state.remember,
+          access_token: state.access_token,
+          refresh_token: state.refresh_token,
+          user: state.user,
+        })
+      })
+      .addCase(loginThunk.rejected, (state, action) => {
+        state.loading = false
+        state.error = action.payload || 'Đăng nhập thất bại'
+      })
 
     // Logout
-    builder.addCase(logoutThunk.pending, (state) => { state.loading = true; state.error = null })
-     .addCase(logoutThunk.fulfilled, (state) => {
-       state.loading = false
-       state.user = null
-       state.access_token = null
-       state.refresh_token = null
-       state.isAuthenticated = false
-       state.remember = null
-       clearAllSessions()
-     })
-     .addCase(logoutThunk.rejected, (state, action) => {
-       state.loading = false
-       state.user = null
-       state.access_token = null
-       state.refresh_token = null
-       state.isAuthenticated = false
-       state.remember = null
-       clearAllSessions()
-       state.error = action.payload || 'Đăng xuất thất bại (đã xoá phiên cục bộ)'
-     })
+    builder
+      .addCase(logoutThunk.pending, (state) => { state.loading = true; state.error = null })
+      .addCase(logoutThunk.fulfilled, (state) => {
+        state.loading = false
+        state.user = null
+        state.access_token = null
+        state.refresh_token = null
+        state.isAuthenticated = false
+        state.remember = null
+        clearAllSessions()
+      })
+      .addCase(logoutThunk.rejected, (state, action) => {
+        state.loading = false
+        state.user = null
+        state.access_token = null
+        state.refresh_token = null
+        state.isAuthenticated = false
+        state.remember = null
+        clearAllSessions()
+        state.error = action.payload || 'Đăng xuất thất bại (đã xoá phiên cục bộ)'
+      })
+
+    // Register
+    builder
+      .addCase(registerThunk.pending, (state) => {
+        state.loading = true
+        state.error = null
+      })
+      // extraReducers trong AuthSlice.js
+      .addCase(registerThunk.fulfilled, (state, action) => {
+        state.loading = false
+        state.user = action.payload?.user ?? null
+        state.access_token = null
+        state.refresh_token = null
+        state.isAuthenticated = false
+      })
+      .addCase(registerThunk.rejected, (state, action) => {
+        state.loading = false
+        state.error = action.payload || 'Đăng ký thất bại'
+      })
   },
 })
 

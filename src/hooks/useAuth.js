@@ -1,12 +1,13 @@
 import { useDispatch, useSelector } from 'react-redux'
 
 import {
-  loginThunk,              // Thunk đăng nhập
-  logoutThunk,             // Thunk đăng xuất
-  selectAuth,              // Selector: toàn bộ nhánh auth
-  selectAuthLoading,       // Selector: cờ loading
-  selectAuthError,         // Selector: thông báo lỗi
-  selectIsAuthenticated,   // Selector: đã đăng nhập hay chưa
+  registerThunk,
+  loginThunk,
+  logoutThunk,
+  selectAuth,
+  selectAuthLoading,
+  selectAuthError,        
+  selectIsAuthenticated,
 } from '@/features/auth/AuthSlice.js'
 
 export default function useAuth() {
@@ -19,7 +20,8 @@ export default function useAuth() {
   const isAuthenticated = useSelector(selectIsAuthenticated)
 
   // Hàm gọi các thunk (hành động bất đồng bộ)
-  const login = (payload) => dispatch(loginThunk(payload))  // payload: { email, password, remember }
+  const register = (payload) => dispatch(registerThunk(payload))
+  const login = (payload) => dispatch(loginThunk(payload))
   const logout = () => dispatch(logoutThunk())
 
   // Trả về cho component sử dụng
@@ -28,6 +30,7 @@ export default function useAuth() {
     loading,
     error,
     isAuthenticated,
+    register,
     login,
     logout,
   }
