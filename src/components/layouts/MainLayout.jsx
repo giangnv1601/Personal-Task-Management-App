@@ -27,7 +27,7 @@ const MainLayout = () => {
   }
 
   return (
-    <div className="flex min-h-screen bg-gray-50">
+    <div className="flex min-h-screen bg-[#E1E5E8]">
       {/* Sidebar */}
       <aside className="w-64 bg-[#2f3b45] text-gray-200 flex flex-col rounded-r-2xl">
         {/* Logo */}
@@ -87,7 +87,7 @@ const MainLayout = () => {
       </aside>
 
       {/* Nội dung trang */}
-      <main className="flex-1 p-6">
+      <main className="flex-1 px-5 py-2 bg-[#E1E5E8]">
         <Outlet />
       </main>
     </div>
