@@ -2,7 +2,7 @@
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Routes, Route } from 'react-router-dom'
-// Mock sonner toast
+// mock sonner toast
 jest.mock('sonner', () => ({
   Toaster: () => null,
   toast: Object.assign(jest.fn(), {
@@ -12,27 +12,21 @@ jest.mock('sonner', () => ({
 }))
 import { toast } from 'sonner'
 
-// Mock supabase client
-jest.mock('@/api/supabaseClient.js', () => ({
+// mock useAuth hook (we'll control mockAuth.register in tests)
+const mockAuth = { register: jest.fn() }
+jest.mock('@/hooks/useAuth.js', () => ({
   __esModule: true,
-  default: {
-    auth: {
-      signUp: jest.fn(),
-    },
-  },
+  default: () => mockAuth,
 }))
-import supabase from '@/api/supabaseClient.js'
-import LoginPage from '@/features/auth/LoginPage.jsx'
-import RegisterPage from '@/features/auth/RegisterPage.jsx'
 
-
-
-// Mock useNavigate
+// mock useNavigate
 const mockNavigate = jest.fn()
 jest.mock('react-router-dom', () => {
   const actual = jest.requireActual('react-router-dom')
   return { ...actual, useNavigate: () => mockNavigate }
 })
+
+import RegisterPage from '@/features/auth/RegisterPage.jsx'
 
 const renderUI = () =>
   render(
@@ -45,38 +39,30 @@ beforeEach(() => {
   jest.clearAllMocks()
 })
 
-test('render form & submit thành công -> toast.success + navigate /login', async () => {
-  supabase.auth.signUp.mockResolvedValue({ data: {}, error: null })
+test('hiển thị form và đăng ký thành công → toast.success + điều hướng tới /login', async () => {
+  mockAuth.register.mockResolvedValue({ meta: { requestStatus: 'fulfilled' }, payload: {} })
 
   renderUI()
   const u = userEvent.setup()
 
-  // ACTIONS
   await u.type(screen.getByLabelText(/Email/i), 'user@example.com')
   await u.type(screen.getByLabelText(/^Mật khẩu$/i), 'Password123!')
   await u.type(screen.getByLabelText(/Nhập lại mật khẩu/i), 'Password123!')
   await u.click(screen.getByLabelText(/Tôi đồng ý/i))
   await u.click(screen.getByRole('button', { name: /Đăng ký/i }))
 
-  // ASSERTIONS
   await waitFor(() => {
-    expect(supabase.auth.signUp).toHaveBeenCalledWith({
-      email: 'user@example.com',
-      password: 'Password123!',
-    })
+    expect(mockAuth.register).toHaveBeenCalledWith({ email: 'user@example.com', password: 'Password123!' })
   })
-  expect(toast.success).toHaveBeenCalledWith('Đăng ký thành công!')
+  expect(toast.success).toHaveBeenCalledWith('Đăng ký thành công! Vui lòng đăng nhập.')
   expect(mockNavigate).toHaveBeenCalledWith('/login', expect.objectContaining({
     replace: true,
-    state: { notice: 'Đăng ký thành công!' }
+    state: { notice: 'Đăng ký thành công!' },
   }))
 })
 
-test('email đã tồn tại -> toast.error, không điều hướng', async () => {
-  supabase.auth.signUp.mockResolvedValue({
-    data: {},
-    error: { status: 400, message: 'User already registered' }
-  })
+test('email đã tồn tại → toast.error và không điều hướng', async () => {
+  mockAuth.register.mockResolvedValue({ meta: { requestStatus: 'rejected' }, payload: 'User already registered' })
 
   renderUI()
   const u = userEvent.setup()
@@ -124,15 +110,17 @@ test('nút bị vô hiệu hoá khi chưa đồng ý và bị disable trong lúc
   const u = userEvent.setup()
   const submitBtn = screen.getByRole('button', { name: /Đăng ký/i })
 
+  // initially disabled because not agreed
   expect(submitBtn).toBeDisabled()
 
+  // check agree -> enabled
   await u.click(screen.getByLabelText(/Tôi đồng ý/i))
   expect(submitBtn).not.toBeDisabled()
 
-  // Giả lập promise signUp chưa hoàn tất để kiểm tra trạng thái loading
-  let resolveSignUp
-  const signUpPromise = new Promise((res) => { resolveSignUp = res })
-  supabase.auth.signUp.mockReturnValue(signUpPromise)
+  // prepare a pending promise for register to keep isSubmitting=true
+  let resolveRegister
+  const pending = new Promise((res) => { resolveRegister = res })
+  mockAuth.register.mockReturnValue(pending)
 
   await u.type(screen.getByLabelText(/Email/i), 'submit@checking.test')
   await u.type(screen.getByLabelText(/^Mật khẩu$/i), 'Password123!')
@@ -141,24 +129,53 @@ test('nút bị vô hiệu hoá khi chưa đồng ý và bị disable trong lúc
   await u.click(submitBtn)
   expect(submitBtn).toBeDisabled()
 
-  // Giả lập hoàn tất gửi
-  resolveSignUp({ data: {}, error: null })
+  // resolve and wait for success handling
+  resolveRegister({ meta: { requestStatus: 'fulfilled' }, payload: {} })
   await waitFor(() => expect(toast.success).toHaveBeenCalled())
 })
 
-test('link Đăng nhập điều hướng tới /login bằng react-router Link', async () => {
+test('link "Đăng nhập" điều hướng tới /login bằng react-router Link', async () => {
   const u = userEvent.setup()
 
   render(
     <MemoryRouter initialEntries={['/']}>
       <Routes>
         <Route path="/" element={<RegisterPage />} />
-        <Route path="/login" element={<LoginPage />} />
+        <Route path="/login" element={<div data-testid="login-page">Login page</div>} />
       </Routes>
     </MemoryRouter>
   )
 
   const loginLink = screen.getByText(/Đăng nhập/i)
   await u.click(loginLink)
-  expect(await screen.findByText(/Login|Đăng nhập/i)).toBeInTheDocument()
+  expect(await screen.findByTestId('login-page')).toBeInTheDocument()
+})
+
+test('đăng ký bị lỗi (reject) → bắt lỗi và hiển thị toast', async () => {
+  mockAuth.register.mockRejectedValue(new Error('Server error'))
+
+  renderUI()
+  const u = userEvent.setup()
+
+  await u.type(screen.getByLabelText(/Email/i), 'err@example.com')
+  await u.type(screen.getByLabelText(/^Mật khẩu$/i), 'Password123!')
+  await u.type(screen.getByLabelText(/Nhập lại mật khẩu/i), 'Password123!')
+  await u.click(screen.getByLabelText(/Tôi đồng ý/i))
+  await u.click(screen.getByRole('button', { name: /Đăng ký/i }))
+
+  await waitFor(() => expect(toast.error).toHaveBeenCalledWith('Server error'))
+  expect(mockNavigate).not.toHaveBeenCalled()
+})
+
+test('bấm checkbox "Tôi đồng ý" sẽ bật nút gửi', async () => {
+  renderUI()
+  const u = userEvent.setup()
+  const submitBtn = screen.getByRole('button', { name: /Đăng ký/i })
+
+  // initially disabled
+  expect(submitBtn).toBeDisabled()
+
+  // click agree -> should enable submit
+  await u.click(screen.getByLabelText(/Tôi đồng ý/i))
+  expect(submitBtn).not.toBeDisabled()
 })
