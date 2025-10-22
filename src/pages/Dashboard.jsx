@@ -59,7 +59,7 @@ const Dashboard = () => {
       <div className="bg-white rounded-2xl shadow-sm border border-slate-100 px-5 py-4 flex items-center justify-between">
         {/* Logo + Title */}
         <div className="flex items-center gap-3">
-          <IconSquare />
+          <IconSquare size={44} />
           <h1 className="text-2xl font-semibold text-slate-800">Dashboard</h1>
         </div>
 
