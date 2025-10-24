@@ -1,144 +1,113 @@
-import React, { useMemo, useState, useEffect } from "react"
+import React, { useMemo, useEffect } from "react"
+import { useForm, useFieldArray } from "react-hook-form"
 import { useSelector } from "react-redux"
 import { toast } from "sonner"
+import { useNavigate } from "react-router-dom"
 import useTask from "@/hooks/useTask"
+import { toLocalInput, toUTCISOString } from "@/utils/date"
+import { isValidUrl, validateDeadline } from "@/utils/validate"
 
 const PRIORITIES = ["low", "medium", "high"]
 const STATUSES = ["todo", "in_progress", "done"]
 
-const CreateTask = ({ defaultValues, onCancel, onSuccess }) => {
-  const { createTask, creating, error, clearError } = useTask()
+function CreateTask({ defaultValues, onCancel, onSuccess }) {
+  const { createTask, creating } = useTask()
   const userId = useSelector((s) => s.auth?.user?.id)
+  const navigate = useNavigate()
 
-  const init = useMemo(
-    () => ({
+  const normalizedDefaults = useMemo(() => {
+    const dv = defaultValues || {}
+    return {
       title: "",
       description: "",
-      deadline: "",
       priority: "low",
       status: "todo",
-      checklist: [
-        { id: crypto.randomUUID(), text: "Item 1", done: false },
-        { id: crypto.randomUUID(), text: "Item 2", done: false },
-      ],
       attachment_url: "",
-      ...(defaultValues || {}),
-    }),
-    [defaultValues]
-  )
-
-  const [form, setForm] = useState(init)
-  const [errors, setErrors] = useState({})
-
-  const setField = (k, v) => setForm((s) => ({ ...s, [k]: v }))
-  const addChecklist = () =>
-    setForm((s) => ({
-      ...s,
       checklist: [
-        ...s.checklist,
-        { id: crypto.randomUUID(), text: `Item ${s.checklist.length + 1}`, done: false },
+        { text: "Item 1", done: false },
+        { text: "Item 2", done: false },
       ],
-    }))
-  const removeChecklist = (id) =>
-    setForm((s) => ({ ...s, checklist: s.checklist.filter((c) => c.id !== id) }))
-  const updateChecklist = (id, changes) =>
-    setForm((s) => ({
-      ...s,
-      checklist: s.checklist.map((c) => (c.id === id ? { ...c, ...changes } : c)),
-    }))
+      ...dv,
+      deadline: toLocalInput(dv.deadline || ""),
+    }
+  }, [defaultValues])
 
-  const validate = () => {
-    const e = {}
-    if (!form.title.trim()) e.title = "Vui lòng nhập tên task"
-    if (!form.deadline) e.deadline = "Chọn deadline"
-    return e
-  }
+  const {
+    register,
+    handleSubmit,
+    control,
+    reset,
+    formState: { errors },
+  } = useForm({ defaultValues: normalizedDefaults })
 
-  useEffect(() => {
-    if (error) toast.error(error)
-  }, [error])
+  useEffect(() => reset(normalizedDefaults), [normalizedDefaults, reset])
 
-  const handleSubmit = async (e) => {
-    e.preventDefault()
-    clearError?.()
-    const e2 = validate()
-    setErrors(e2)
-    if (Object.keys(e2).length) return
+  const { fields, append, remove } = useFieldArray({ control, name: "checklist" })
+
+  const onSubmit = async (data) => {
+    if (!userId) return toast.error("Thiếu user đăng nhập")
+
+    if (!isValidUrl(data.attachment_url)) return toast.error("URL không hợp lệ")
 
     const payload = {
+      ...data,
       user_id: userId,
-      title: form.title.trim(),
-      description: form.description.trim(),
-      deadline: form.deadline ? new Date(form.deadline).toISOString() : null,
-      priority: form.priority,
-      status: form.status,
-      checklist: form.checklist.map(({ text, done }) => ({ text, done })),
-      attachment_url: form.attachment_url?.trim() || "",
+      title: data.title.trim(),
+      description: (data.description || "").trim(),
+      deadline: toUTCISOString(data.deadline),
+      checklist: data.checklist.map((c) => ({ text: c.text.trim(), done: !!c.done })),
     }
 
     const action = await createTask(payload)
-    if (action.meta.requestStatus === "fulfilled") {
+    if (action?.meta?.requestStatus === "fulfilled") {
       toast.success("Tạo task thành công!")
-      setForm(init)
+      reset()
       onSuccess?.(action.payload)
-    } else {
-      const msg =
-        action.payload ||
-        action.error?.message ||
-        "Không thể tạo task, vui lòng thử lại"
-      toast.error(msg)
-    }
+    } else toast.error(action?.error?.message || "Không thể tạo task")
   }
+
+  const handleCancel = () => {
+    if (typeof onCancel === "function") return onCancel()
+    navigate(-1)
+  }
+
+  const nowLocalMin = toLocalInput(new Date())
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-[#E1E5E8] p-6">
-      <div className="max-w-md rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+      <div className="max-w-md w-full rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
         <h2 className="mb-4 text-2xl font-semibold text-slate-800">Tạo mới Task</h2>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
           {/* Title */}
           <div>
-            <label htmlFor="title" className="mb-1 block text-sm">
-              Tên task
-            </label>
+            <label className="block text-sm mb-1">Tên task</label>
             <input
-              id="title"
-              value={form.title}
-              onChange={(e) => setField("title", e.target.value)}
-              type="text"
-              className="w-full rounded-lg border border-slate-300 px-3 py-2 outline-none focus:border-slate-400"
+              {...register("title", { required: "Vui lòng nhập tên task" })}
+              className="w-full rounded-lg border px-3 py-2"
               placeholder="Nhập tiêu đề…"
+              disabled={creating}
             />
-            {errors.title && <p className="mt-1 text-xs text-rose-600">{errors.title}</p>}
+            {errors.title && <p className="text-xs text-rose-600">{errors.title.message}</p>}
           </div>
 
           {/* Description */}
           <div>
-            <label htmlFor="description" className="mb-1 block text-sm">
-              Mô tả
-            </label>
+            <label className="block text-sm mb-1">Mô tả</label>
             <textarea
-              id="description"
-              value={form.description}
-              onChange={(e) => setField("description", e.target.value)}
+              {...register("description")}
               rows={2}
-              className="w-full rounded-lg border border-slate-300 px-3 py-2 outline-none focus:border-slate-400 resize-none"
+              className="w-full rounded-lg border px-3 py-2"
               placeholder="Mô tả ngắn…"
+              disabled={creating}
             />
           </div>
 
-          {/* Deadline + Priority */}
+          {/* Priority + Deadline */}
           <div>
-            <label htmlFor="deadline" className="mb-1 block text-sm text-slate-600">
-              Deadline
-            </label>
+            <label className="block text-sm mb-1">Ưu tiên & Deadline</label>
             <div className="flex gap-2">
-              <select
-                id="priority"
-                value={form.priority}
-                onChange={(e) => setField("priority", e.target.value)}
-                className="w-28 rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-slate-400"
-              >
+              <select {...register("priority")} className="w-28 rounded-lg border px-3 py-2">
                 {PRIORITIES.map((p) => (
                   <option key={p} value={p}>
                     {p[0].toUpperCase() + p.slice(1)}
@@ -147,27 +116,23 @@ const CreateTask = ({ defaultValues, onCancel, onSuccess }) => {
               </select>
 
               <input
-                id="deadline"
-                value={form.deadline}
-                onChange={(e) => setField("deadline", e.target.value)}
                 type="datetime-local"
-                className="flex-1 rounded-lg border border-slate-300 px-3 py-2 outline-none focus:border-slate-400"
+                step="60"
+                min={nowLocalMin}
+                {...register("deadline", {
+                  required: "Chọn deadline",
+                  validate: validateDeadline,
+                })}
+                className="flex-1 rounded-lg border px-3 py-2"
               />
             </div>
-            {errors.deadline && <p className="mt-1 text-xs text-rose-600">{errors.deadline}</p>}
+            {errors.deadline && <p className="text-xs text-rose-600">{errors.deadline.message}</p>}
           </div>
 
           {/* Status */}
           <div>
-            <label htmlFor="status" className="mb-1 block text-sm">
-              Trạng thái
-            </label>
-            <select
-              id="status"
-              value={form.status}
-              onChange={(e) => setField("status", e.target.value)}
-              className="w-full rounded-lg border border-slate-300 px-3 py-2 outline-none focus:border-slate-400"
-            >
+            <label className="block text-sm mb-1">Trạng thái</label>
+            <select {...register("status")} className="w-full rounded-lg border px-3 py-2">
               {STATUSES.map((s) => (
                 <option key={s} value={s}>
                   {s === "in_progress" ? "In progress" : s[0].toUpperCase() + s.slice(1)}
@@ -178,56 +143,50 @@ const CreateTask = ({ defaultValues, onCancel, onSuccess }) => {
 
           {/* Checklist */}
           <div>
-            <p className="mb-1 block text-sm font-medium text-slate-700">Checklist</p>
-            <ul className="space-y-2">
-              {form.checklist.map((c) => (
-                <li key={c.id} className="flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="checkbox"
-                      checked={c.done}
-                      onChange={(e) => updateChecklist(c.id, { done: e.target.checked })}
-                      className="accent-slate-700"
-                    />
-                    <input
-                      value={c.text}
-                      onChange={(e) => updateChecklist(c.id, { text: e.target.value })}
-                      className="w-48 rounded-md border border-slate-300 px-2 py-1 text-sm outline-none focus:border-slate-400"
-                    />
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => removeChecklist(c.id)}
-                    className="rounded-md px-2 py-1 text-sm text-slate-600 hover:bg-slate-50"
-                  >
-                    Xoá
-                  </button>
-                </li>
-              ))}
-            </ul>
-
+            <p className="text-sm font-medium mb-1">Checklist</p>
+            {fields.map((item, i) => (
+              <div key={item.id} className="flex items-center gap-2 mb-1">
+                <input type="checkbox" {...register(`checklist.${i}.done`)} />
+                <div className="flex-1">
+                  <input
+                    {...register(`checklist.${i}.text`, { required: "Không để trống" })}
+                    className="w-full rounded border px-2 py-1 text-sm"
+                    disabled={creating}
+                  />
+                  {errors?.checklist?.[i]?.text && (
+                    <p className="text-xs text-rose-600 mt-1">
+                      {errors.checklist[i].text.message}
+                    </p>
+                  )}
+                </div>
+                <button type="button" onClick={() => remove(i)} className="text-sm text-red-600">
+                  Xóa
+                </button>
+              </div>
+            ))}
             <button
               type="button"
-              onClick={addChecklist}
-              className="mt-2 inline-flex items-center gap-1 text-sm text-indigo-600 hover:underline"
+              onClick={() => append({ text: "", done: false })}
+              className="text-indigo-600 text-sm"
             >
-              <span className="text-base leading-none">＋</span> Thêm checklist
+              + Thêm checklist
             </button>
           </div>
 
           {/* Attachment URL */}
           <div>
-            <label htmlFor="attachment_url" className="mb-1 block text-sm text-slate-600">
-              Đính kèm (URL)
-            </label>
+            <label className="block text-sm mb-1">Đính kèm (URL)</label>
             <input
-              id="attachment_url"
-              value={form.attachment_url || ""}
-              onChange={(e) => setField("attachment_url", e.target.value)}
               type="url"
+              {...register("attachment_url", {
+                validate: (v) => isValidUrl(v) || "URL không hợp lệ",
+              })}
               placeholder="https://…"
-              className="w-full rounded-lg border border-slate-300 px-3 py-2 outline-none focus:border-slate-400"
+              className="w-full rounded-lg border px-3 py-2"
             />
+            {errors.attachment_url && (
+              <p className="text-xs text-rose-600">{errors.attachment_url.message}</p>
+            )}
           </div>
 
           {/* Buttons */}
@@ -241,8 +200,8 @@ const CreateTask = ({ defaultValues, onCancel, onSuccess }) => {
             </button>
             <button
               type="button"
-              onClick={onCancel}
-              className="rounded-lg border border-slate-300 bg-white px-5 py-2.5 text-slate-700 hover:bg-slate-50"
+              onClick={handleCancel}
+              className="rounded-lg border px-5 py-2.5 bg-white hover:bg-slate-50"
             >
               Huỷ
             </button>
