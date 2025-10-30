@@ -6,9 +6,11 @@ import ProtectedLayout from "@/components/layouts/ProtectedLayout.jsx"
 import PublicOnlyLayout from "@/components/layouts/PublicOnlyLayout.jsx"
 import LoginPage from "@/features/auth/LoginPage.jsx"
 import RegisterPage from "@/features/auth/RegisterPage.jsx"
+import CreateTask from "@/features/tasks/CreateTask.jsx"
 import TasksPage from "@/features/tasks/TasksPage.jsx"
 import Dashboard from "@/pages/Dashboard.jsx"
 import Profile from "@/pages/Profile.jsx"
+
 
 export default function App() {
   return (
@@ -26,6 +28,7 @@ export default function App() {
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/tasks" element={<TasksPage />} />
             <Route path="/profile" element={<Profile />} />
+            <Route path="/tasks/new" element={<CreateTask />} />
           </Route>
         </Route>
 
