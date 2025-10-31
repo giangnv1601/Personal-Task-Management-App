@@ -1,6 +1,5 @@
 import { Plus, CheckCircle2, Circle, AlertCircle } from "lucide-react"
 import { Link } from "react-router-dom"
-import React from "react"
 
 import IconSquare from "@/components/ui/IconSquare"
 
