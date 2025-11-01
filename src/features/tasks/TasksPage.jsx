@@ -7,7 +7,7 @@ import PriorityTag from "@/components/ui/PriorityTag"
 import useAuth from "@/hooks/useAuth"
 import usePagination from "@/hooks/usePagination"
 import useTask from "@/hooks/useTask"
-import { formatDate, isDeadlineBeforeOrEqual, toLocalInput, toUTCISOString } from "@/utils/date"
+import { formatDate, isDeadlineBeforeOrEqual } from "@/utils/date"
 
 const PAGE_SIZE = 10
 
@@ -27,14 +27,9 @@ const TasksPage = () => {
 
   const [priorityFilter, setPriorityFilter] = useState("all")
   const [statusFilter, setStatusFilter] = useState("all")
-  const [deadlineFilter, setDeadlineFilter] = useState("") 
+  const [deadlineFilter, setDeadlineFilter] = useState("")
 
-  // Edit modal
-  const [editing, setEditing] = useState(null)
-
-  // Pagination (initialized after filteredTasks)
-
-  // Fetch tasks khi component mount hoặc userId thay đổi
+  // Fetch tasks
   useEffect(() => {
     if (user?.id) {
       fetchTasks({ userId: user.id })
@@ -53,13 +48,13 @@ const TasksPage = () => {
     return (items || []).map(t => ({ ...t, done: t.status === "done" }))
   }, [items])
 
-  // Gọi API updateTask
+  // Toggle checkbox
   const toggleDone = useCallback(async (id) => {
     const task = tasks.find(t => t.id === id)
     if (!task) return
 
     const nextStatus = task.done ? "todo" : "done"
-    const action = await updateTask(id, { 
+    const action = await updateTask(id, {
       status: nextStatus,
       updated_at: new Date().toISOString()
     })
@@ -68,7 +63,8 @@ const TasksPage = () => {
       toast.success("Cập nhật trạng thái task thành công!")
     }
   }, [tasks, updateTask])
-  
+
+  // Filter
   const filteredTasks = useMemo(() => {
     const term = debouncedQ.toLowerCase()
     const pf = priorityFilter.toLowerCase()
@@ -76,57 +72,22 @@ const TasksPage = () => {
     const df = deadlineFilter
 
     return tasks.filter(t => {
-      const matchesQ =
-        !term ||
-        t.title.toLowerCase().includes(term) ||
-        (t.description || "").toLowerCase().includes(term)
-
-      const matchesPriority =
-        pf === "all" || String(t.priority).toLowerCase() === pf
-
-      const matchesStatus =
-        sf === "all" || String(t.status).toLowerCase() === sf
-
-      const matchesDeadline =
-        !df || (t.deadline && isDeadlineBeforeOrEqual(t.deadline, df))
-
+      const matchesQ = !term || (t.title || "").toLowerCase().includes(term)
+      const matchesPriority = pf === "all" || String(t.priority).toLowerCase() === pf
+      const matchesStatus = sf === "all" || String(t.status).toLowerCase() === sf
+      const matchesDeadline = !df || (t.deadline && isDeadlineBeforeOrEqual(t.deadline, df))
       return matchesQ && matchesPriority && matchesStatus && matchesDeadline
     })
   }, [tasks, debouncedQ, priorityFilter, statusFilter, deadlineFilter])
 
-  // Pagination (now we have filteredTasks)
-  const { page, setPage, totalPages, pageItems, pageRange, goPrev, goNext, goTo } = usePagination(filteredTasks, PAGE_SIZE)
+  // Pagination
+  const { page, setPage, totalPages, pageItems, pageRange, goPrev, goNext, goTo } =
+    usePagination(filteredTasks, PAGE_SIZE)
 
   // Reset về trang 1 khi đổi bộ lọc/tìm kiếm
   useEffect(() => {
     setPage(1)
   }, [debouncedQ, priorityFilter, statusFilter, deadlineFilter, setPage])
-
-  // ----- Edit handlers -----
-  const openEdit = (task) => setEditing({ ...task })
-  const closeEdit = () => setEditing(null)
-  const handleEditChange = (k, v) => setEditing(prev => ({ ...prev, [k]: v }))
-  
-  const saveEdit = async (e) => {
-    e.preventDefault()
-    if (!editing) return
-    
-    const updates = {
-      title: editing.title.trim(),
-      description: (editing.description || "").trim(),
-      priority: editing.priority,
-      status: editing.status,
-      deadline: editing.deadline,
-      updated_at: new Date().toISOString(),
-    }
-
-    const action = await updateTask(editing.id, updates)
-    
-    if (action?.meta?.requestStatus === "fulfilled") {
-      toast.success("Cập nhật task thành công!")
-      closeEdit()
-    }
-  }
 
   return (
     <div className="p-4">
@@ -140,13 +101,13 @@ const TasksPage = () => {
           <Plus size={16} /> Tạo mới task
         </Link>
       </div>
-      
+
       {/* --- Task List Card --- */}
       <div className="rounded-xl border border-gray-300 bg-white p-4 shadow-sm">
-        
+
         {/* Toolbar */}
         <div className="mb-4 flex flex-wrap gap-3 pb-2">
-          
+
           {/* Search */}
           <div className="relative flex-1 min-w-[220px]">
             <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
@@ -156,7 +117,7 @@ const TasksPage = () => {
               type="text"
               value={q}
               onChange={(e) => setQ(e.target.value)}
-              placeholder="Tìm kiếm task"
+              placeholder="Tìm theo tiêu đề"
               className="w-full rounded-lg border border-gray-300 py-2 pl-9 pr-3 focus:border-gray-400 focus:outline-none"
             />
           </div>
@@ -225,46 +186,50 @@ const TasksPage = () => {
 
         {/* Rows */}
         {!loading && (
-        <div>
-          {pageItems.map((t) => (
-            <div
-              key={t.id} 
-              className="flex justify-between items-center px-3 py-3 border-b border-gray-200 hover:bg-gray-50 transition-colors"
-            >
-              <div className="flex items-center gap-3 w-1/2">
-                <input
-                  type="checkbox"
-                  className="size-4 cursor-pointer"
-                  checked={!!t.done}
-                  onChange={() => toggleDone(t.id)}
-                  disabled={updating}
-                  aria-label={`Hoàn thành task: ${t.title}`}
-                />
-                <span className={`text-gray-900 ${t.done ? "text-gray-500 line-through" : ""}`}>
-                  {t.title}
-                </span>
-              </div>
-              
-              <div className="w-[140px] text-center"><PriorityTag priority={t.priority} /></div>
-              
-              <div className="w-[140px] text-center text-gray-700 font-mono text-sm">{formatDate(t.deadline)}</div>
-              
-              <div className="w-[90px] flex justify-center">
-                <button
-                  onClick={() => openEdit(t)}
-                  disabled={updating}
-                  className="rounded-lg border border-gray-300 px-3 py-1 text-sm text-blue-600 hover:bg-blue-50 transition-colors disabled:opacity-50"
-                >
-                  Sửa
-                </button>
-              </div>
-            </div>
-          ))}
+          <div>
+            {pageItems.map((t) => (
+              <div
+                key={t.id}
+                className="flex justify-between items-center px-3 py-3 border-b border-gray-200 hover:bg-gray-50 transition-colors"
+              >
+                <div className="flex items-center gap-3 w-1/2">
+                  <input
+                    type="checkbox"
+                    className="size-4 cursor-pointer"
+                    checked={!!t.done}
+                    onChange={() => toggleDone(t.id)}
+                    disabled={updating}
+                    aria-label={`Hoàn thành task: ${t.title}`}
+                  />
+                  <span className={`text-gray-900 ${t.done ? "text-gray-500 line-through" : ""}`}>
+                    {t.title}
+                  </span>
+                </div>
 
-          {pageItems.length === 0 && (
-            <div className="text-center text-gray-500 py-8">Không có task phù hợp.</div>
-          )}
-        </div>
+                <div className="w-[140px] text-center">
+                  <PriorityTag priority={t.priority} />
+                </div>
+
+                <div className="w-[140px] text-center text-gray-700 font-mono text-sm">
+                  {t.deadline ? formatDate(t.deadline) : <span className="text-gray-400">—</span>}
+                </div>
+
+                <div className="w-[90px] flex justify-center">
+                  <button
+                    onClick={() => toast.info("Tính năng Sửa đang phát triển")}
+                    disabled={updating}
+                    className="rounded-lg border border-gray-300 px-3 py-1 text-sm text-blue-600 hover:bg-blue-50 transition-colors disabled:opacity-50"
+                  >
+                    Sửa
+                  </button>
+                </div>
+              </div>
+            ))}
+
+            {pageItems.length === 0 && (
+              <div className="text-center text-gray-500 py-8">Không có task phù hợp.</div>
+            )}
+          </div>
         )}
 
         {/* Pagination */}
@@ -278,10 +243,9 @@ const TasksPage = () => {
               <ChevronLeft size={16} /> Prev
             </button>
 
-            {/* Dùng pageRange đã được tính bằng useMemo */}
             {pageRange.map((p, idx) =>
               p === "…" ? (
-                <span key={`gap-${idx}`} className="px-2 text-gray-400" aria-hidden="true">…</span> 
+                <span key={`gap-${idx}`} className="px-2 text-gray-400" aria-hidden="true">…</span>
               ) : (
                 <button
                   key={p}
@@ -307,115 +271,6 @@ const TasksPage = () => {
           </div>
         )}
       </div>
-
-      {/* --- Edit modal --- */}
-      {editing && (
-        <>
-          <div
-            className="fixed inset-0 bg-black/30 z-40"
-            role="button"
-            tabIndex={0}
-            aria-label="Đóng chỉnh sửa"
-            onClick={closeEdit}
-            onKeyDown={(e) => {
-              if (e.key === "Escape" || e.key === "Enter" || e.key === " ") closeEdit()
-            }}
-          />
-          <div className="fixed left-1/2 top-1/2 w-[92vw] max-w-xl -translate-x-1/2 -translate-y-1/2 rounded-2xl bg-white shadow-2xl border p-6 z-50">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-bold">Sửa Task: {editing.title.substring(0, 30)}...</h2>
-              <button onClick={closeEdit} className="rounded-full p-2 hover:bg-gray-100">
-                <X size={20} />
-              </button>
-            </div>
-
-            <form onSubmit={saveEdit} className="space-y-4">
-              <div>
-                <label htmlFor="edit-title" className="block text-sm font-medium mb-1">Tiêu đề</label>
-                <input
-                  id="edit-title"
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-1 focus:ring-gray-400 focus:border-gray-400"
-                  value={editing.title}
-                  onChange={(e) => handleEditChange("title", e.target.value)}
-                  required
-                />
-              </div>
-
-              <div>
-                <label htmlFor="edit-description" className="block text-sm font-medium mb-1">Mô tả</label>
-                <textarea
-                  id="edit-description"
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-1 focus:ring-gray-400 focus:border-gray-400"
-                  rows={3}
-                  value={editing.description}
-                  onChange={(e) => handleEditChange("description", e.target.value)}
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label htmlFor="edit-priority" className="block text-sm font-medium mb-1">Ưu tiên</label>
-                  <select
-                    id="edit-priority"
-                    className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-1 focus:ring-gray-400 focus:border-gray-400"
-                    value={editing.priority}
-                    onChange={(e) => handleEditChange("priority", e.target.value)}
-                  >
-                    <option value="low">Low</option>
-                    <option value="medium">Medium</option>
-                    <option value="high">High</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label htmlFor="edit-status" className="block text-sm font-medium mb-1">Trạng thái</label>
-                  <select
-                    id="edit-status"
-                    className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-1 focus:ring-gray-400 focus:border-gray-400"
-                    value={editing.status}
-                    onChange={(e) => handleEditChange("status", e.target.value)}
-                  >
-                    <option value="todo">Todo</option>
-                    <option value="in_progress">In Progress</option>
-                    <option value="done">Done</option>
-                  </select>
-                </div>
-              </div>
-
-              <div>
-                <label htmlFor="edit-deadline" className="block text-sm font-medium mb-1">Hạn</label>
-                <input
-                  id="edit-deadline"
-                  type="datetime-local"
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-1 focus:ring-gray-400 focus:border-gray-400"
-                  // Chuyển UTC ISO String thành local input format
-                  value={toLocalInput(editing.deadline)} 
-                  // Chuyển local input format thành UTC ISO String để lưu vào state
-                  onChange={(e) => handleEditChange("deadline", toUTCISOString(e.target.value))} 
-                />
-              </div>
-
-              <div className="flex justify-end gap-3 pt-2">
-                <button 
-                  type="button" 
-                  onClick={closeEdit}
-                  disabled={updating}
-                  className="rounded-lg border border-gray-300 px-4 py-2 hover:bg-gray-50 transition-colors disabled:opacity-50"
-                >
-                  Hủy
-                </button>
-                <button 
-                  type="submit" 
-                  disabled={updating}
-                  className="rounded-lg bg-gray-900 text-white px-4 py-2 hover:bg-black transition-colors disabled:opacity-50"
-                >
-                  {updating ? "Đang lưu..." : "Lưu thay đổi"}
-                </button>
-              </div>
-            </form>
-          </div>
-        </>
-      )}
     </div>
   )
 }
