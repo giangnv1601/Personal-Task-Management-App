@@ -1,5 +1,5 @@
 import { Plus, CheckCircle2, Circle, AlertCircle } from "lucide-react"
-import React from "react"
+import { Link } from "react-router-dom"
 
 import IconSquare from "@/components/ui/IconSquare"
 
@@ -79,10 +79,13 @@ const Dashboard = () => {
         {/* Title + Button */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
           <h2 className="text-lg font-semibold text-slate-800">Danh sách Task</h2>
-          <button className="inline-flex items-center gap-1 bg-[#5E7280] text-white rounded-xl px-3 py-2 hover:bg-slate-700 transition">
+          <Link
+            to="/tasks/new"
+            className="inline-flex items-center gap-1 bg-[#5E7280] text-white rounded-xl px-3 py-2 hover:bg-slate-700 transition"
+          >
             <Plus className="w-5 h-5" />
             Thêm Task
-          </button>
+          </Link>
         </div>
 
         {/* Table */}

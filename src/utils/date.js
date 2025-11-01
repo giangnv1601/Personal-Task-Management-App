@@ -18,3 +18,20 @@ export const toUTCISOString = (localDatetime) => {
   const date = new Date(localDatetime)
   return isNaN(date.getTime()) ? null : date.toISOString()
 }
+
+// Định dạng ngày theo locale vi-VN
+export const formatDate = (iso) => {
+  if (!iso) return "—"
+  const d = new Date(iso)
+  return isNaN(d.getTime()) ? "—" : d.toLocaleDateString("vi-VN")
+}
+
+// So sánh deadline (UTC ISO) <= ngày chọn (yyyy-mm-dd), theo NGÀY (bỏ giờ)
+export const isDeadlineBeforeOrEqual = (deadlineISO, yyyyMmDd) => {
+  if (!deadlineISO || !yyyyMmDd) return false
+  const d1 = new Date(deadlineISO)
+  const d2 = new Date(yyyyMmDd)
+  d1.setHours(0, 0, 0, 0)
+  d2.setHours(0, 0, 0, 0)
+  return d1.getTime() <= d2.getTime()
+}
