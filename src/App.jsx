@@ -29,7 +29,7 @@ export default function App() {
             <Route path="/tasks" element={<TasksPage />} />
             <Route path="/profile" element={<Profile />} />
             <Route path="/tasks/new" element={<CreateTask />} />
-            <Route path="/tasks/edit" element={<UpdateTask />} />
+            <Route path="/tasks/edit/:id" element={<UpdateTask />} />
           </Route>
         </Route>
 

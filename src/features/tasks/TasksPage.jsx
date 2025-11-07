@@ -215,13 +215,13 @@ const TasksPage = () => {
                 </div>
 
                 <div className="w-[90px] flex justify-center">
-                  <button
-                    onClick={() => toast.info("Tính năng Sửa đang phát triển")}
-                    disabled={updating}
+                  <Link
+                    to={`/tasks/edit/${t.id}`}
+                    aria-label={`Sửa task ${t.title}`}
                     className="rounded-lg border border-gray-300 px-3 py-1 text-sm text-blue-600 hover:bg-blue-50 transition-colors disabled:opacity-50"
                   >
                     Sửa
-                  </button>
+                  </Link>
                 </div>
               </div>
             ))}
