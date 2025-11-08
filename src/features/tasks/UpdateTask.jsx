@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react"
 import { useParams, useNavigate } from "react-router-dom"
-import { useForm, Controller, useFieldArray } from "react-hook-form"
+import { useForm, Controller, useFieldArray, useWatch } from "react-hook-form"
 import { toast } from "sonner"
 import { toLocalInput, toUTCISOString } from "@/utils/date.js"
 import { validateDeadline } from "@/utils/validate.js"
@@ -13,7 +13,7 @@ const UpdateTask = () => {
   const init = useMemo(
     () => ({
       id: "",
-      title: "", 
+      title: "",
       description: "",
       status: "todo",
       priority: "medium",
@@ -28,12 +28,22 @@ const UpdateTask = () => {
   const navigate = useNavigate()
   const { items, fetchTasks, updateTask, deleteTask, loading } = useTask()
 
-  const { control, register, handleSubmit, reset, setError, formState: { errors, isSubmitting, isDirty } } = useForm({
+  const {
+    control,
+    register,
+    handleSubmit,
+    reset,
+    setError,
+    getValues,
+    setValue,
+    formState: { errors, isSubmitting, isDirty }
+  } = useForm({
     defaultValues: init,
     mode: "onChange"
   })
 
   const { fields, append, remove } = useFieldArray({ control, name: "checklist" })
+  const watchedChecklist = useWatch({ control, name: "checklist" })
 
   const [isDeleting, setIsDeleting] = useState(false)
   const busy = loading || isSubmitting || isDeleting
@@ -69,8 +79,26 @@ const UpdateTask = () => {
     return () => { mounted = false }
   }, [id, items, fetchTasks, reset, init])
 
-  // Submit handler
+  // Đồng bộ trạng thái theo checklist:
+  // - Nếu tất cả checklist đều done => set status = 'done'
+  // - Nếu có ít nhất 1 chưa xong và hiện tại là 'done' => hạ về 'in_progress'
+  useEffect(() => {
+    const list = Array.isArray(watchedChecklist) ? watchedChecklist : []
+    if (list.length === 0) return
+
+    const allDone = list.every((it) => !!it?.done)
+    const current = getValues("status")
+
+    if (allDone && current !== "done") {
+      setValue("status", "done", { shouldDirty: true, shouldValidate: true })
+    } else if (!allDone && current === "done") {
+      setValue("status", "in_progress", { shouldDirty: true, shouldValidate: true })
+    }
+  }, [watchedChecklist, getValues, setValue])
+
   const onSubmit = async (data) => {
+    if (!confirm("Bạn có chắc muốn cập nhật task này?")) return
+
     try {
       if (!data.title?.trim()) {
         setError("title", { message: "Tên task là bắt buộc" })
@@ -105,6 +133,7 @@ const UpdateTask = () => {
   }
 
   const handleDelete = async () => {
+    if (!confirm("Bạn có chắc muốn xóa task này?")) return
     setIsDeleting(true)
     try {
       const action = await deleteTask(id)
@@ -176,7 +205,7 @@ const UpdateTask = () => {
             />
           </div>
 
-          {/* Deadline */}
+          {/* Deadline + Ưu tiên trên cùng một hàng (giữ nguyên bố cục bạn đã làm) */}
           <div className="flex items-center gap-4">
             <label htmlFor="deadline" className="w-28 text-sm font-medium mb-1">Deadline</label>
             <Controller
@@ -206,7 +235,6 @@ const UpdateTask = () => {
             />
           </div>
 
-          {/* Ưu tiên */}
           <div className="flex items-center gap-4">
             <label htmlFor="priority" className="w-28 text-sm font-medium mb-1">Ưu tiên</label>
             <select
@@ -228,7 +256,6 @@ const UpdateTask = () => {
             <p className="text-sm font-medium mb-1">Checklist</p>
             {fields.map((f, idx) => (
               <div key={f.id} className="flex items-center gap-2 mb-1">
-  
                 <input type="hidden" {...register(`checklist.${idx}.id`)} defaultValue={f.id} />
 
                 <input

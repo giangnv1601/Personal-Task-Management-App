@@ -136,6 +136,7 @@ describe("UpdateTask", () => {
     await userEvent.type(title, "   ")
     const submitBtn = screen.getByRole("button", { name: /cập nhật/i })
     expect(submitBtn).toBeEnabled()
+    global.confirm = jest.fn(() => true)
     await userEvent.click(submitBtn)
 
     expect(await screen.findByText(/tên task là bắt buộc/i)).toBeInTheDocument()
@@ -152,6 +153,7 @@ describe("UpdateTask", () => {
     await userEvent.type(urlInput, "not-a-url")
 
     const submitBtn = screen.getByRole("button", { name: /cập nhật/i })
+    global.confirm = jest.fn(() => true)
     await userEvent.click(submitBtn)
 
     expect(await screen.findByText(/đính kèm phải là url hợp lệ/i)).toBeInTheDocument()
@@ -162,6 +164,7 @@ describe("UpdateTask", () => {
     mockItems = [{ id: "123", title: "Old", description: "", status: "todo", priority: "medium", deadline: null, attachment_url: "", checklist: [] }]
     mockUpdateTask.mockResolvedValue({ meta: { requestStatus: "fulfilled" } })
     setup()
+    global.confirm = jest.fn(() => true)
 
     const title = await screen.findByLabelText(/tên task/i)
     await userEvent.clear(title)
@@ -225,8 +228,8 @@ describe("UpdateTask", () => {
     mockItems = [{ id: "123", title: "Task", description: "", status: "todo", priority: "medium", deadline: null, attachment_url: "", checklist: [] }]
     mockDeleteTask.mockResolvedValue({ meta: { requestStatus: "fulfilled" } })
     setup()
-
     const delBtn = await screen.findByRole("button", { name: /xo[aá] task/i })
+    global.confirm = jest.fn(() => true)
     await userEvent.click(delBtn)
     await waitFor(() => {
       expect(mockDeleteTask).toHaveBeenCalledWith("123")
@@ -255,9 +258,12 @@ describe("UpdateTask", () => {
     const title = screen.getByLabelText(/tên task/i)
     await userEvent.type(title, "X")
     const submitBtn = screen.getByRole("button", { name: /cập nhật/i })
+    // allow confirm dialog so submit path is reachable during tests that click it
+    global.confirm = jest.fn(() => true)
     await userEvent.click(submitBtn)
-
-    await waitFor(() => expect(mockUpdateTask).toHaveBeenCalledTimes(1))
+    await waitFor(() => {
+      expect(mockUpdateTask).toHaveBeenCalledTimes(1)
+    })
     const [, payload] = mockUpdateTask.mock.calls[0]
     expect(typeof payload.deadline).toBe("string")
   })
@@ -326,6 +332,8 @@ describe("UpdateTask", () => {
     mockDeleteTask.mockResolvedValue({ meta: { requestStatus: "fulfilled" } })
     setup()
     const delBtn = await screen.findByRole("button", { name: /xo[aá] task/i })
+    // component now asks confirm() before delete — mock it to return true
+    global.confirm = jest.fn(() => true)
     await userEvent.click(delBtn)
     await waitFor(() => expect(mockDeleteTask).toHaveBeenCalledWith("123"))
     expect(mockNavigate).toHaveBeenCalledWith("/tasks")
@@ -358,6 +366,7 @@ describe("UpdateTask", () => {
     await userEvent.type(title, "Valid title")
 
     const submitBtn = screen.getByRole("button", { name: /cập nhật/i })
+    global.confirm = jest.fn(() => true)
     await userEvent.click(submitBtn)
 
     await waitFor(() => {
