@@ -23,7 +23,12 @@ export const toUTCISOString = (localDatetime) => {
 export const formatDate = (iso) => {
   if (!iso) return "—"
   const d = new Date(iso)
-  return isNaN(d.getTime()) ? "—" : d.toLocaleDateString("vi-VN")
+  if (isNaN(d.getTime())) return "—"
+  const pad = (n) => String(n).padStart(2, "0")
+  const dd = pad(d.getDate())
+  const mm = pad(d.getMonth() + 1)
+  const yyyy = d.getFullYear()
+  return `${dd}/${mm}/${yyyy}`
 }
 
 // So sánh deadline (UTC ISO) <= ngày chọn (yyyy-mm-dd), theo NGÀY (bỏ giờ)

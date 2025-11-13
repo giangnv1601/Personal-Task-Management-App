@@ -31,7 +31,7 @@ export default function App() {
             <Route path="/profile" element={<Profile />} />
             <Route path="/tasks/new" element={<CreateTask />} />
             <Route path="/tasks/edit/:id" element={<UpdateTask />} />
-            <Route path="/tasks/detail" element={<DetailTask />} />
+            <Route path="/tasks/detail/:id" element={<DetailTask />} />
           </Route>
         </Route>
 

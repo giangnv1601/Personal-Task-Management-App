@@ -1,21 +1,8 @@
-import React from "react"
-import { useNavigate } from "react-router-dom"
+import React, { useEffect, useState } from "react"
+import { useNavigate, useParams } from "react-router-dom"
+import { toast } from "sonner"
+import useTask from "@/hooks/useTask"
 import { formatDate } from "@/utils/date"
-
-const demoTask = {
-  id: "demo-1",
-  title: "Viết UI đăng nhập",
-  description: "Thiết kế & code form đăng nhập",
-  deadline: "2025-11-10T09:00:00.000Z",
-  priority: "easy",
-  status: "in_progress",
-  checklist: [
-    { text: "Tạo wireframe", done: false },
-    { text: "Gửi review cho Leader", done: true },
-  ],
-  attachment_url: "https://example.com/files/login-ui-design.pdf",
-  created_at: "2025-04-01T08:00:00.000Z",
-}
 
 const PriorityBadge = ({ value }) => {
   const map = {
@@ -24,7 +11,7 @@ const PriorityBadge = ({ value }) => {
     low: "bg-slate-400 text-white",
   }
   return (
-    <span className={`inline-block rounded px-2 py-0.5 text-sm ${map[value] || "bg-slate-300"}`}>
+    <span className={`inline-block rounded px-2 py-0.5 text-sm ${map[value]}`}>
       {value ? value[0].toUpperCase() + value.slice(1) : "—"}
     </span>
   )
@@ -37,27 +24,96 @@ const StatusBadge = ({ value }) => {
     in_progress: "bg-yellow-300 text-yellow-900",
     done: "bg-green-200 text-green-800",
   }
-  return <span className={`inline-block rounded px-2 py-0.5 text-sm ${map[value] || "bg-slate-200"}`}>{label}</span>
+  return <span className={`inline-block rounded px-2 py-0.5 text-sm ${map[value]}`}>{label}</span>
 }
 
 const Row = ({ label, children }) => (
-  <div className="flex items-start">
-    <div className="w-25 shrink-0">{label}</div>
-    <div>{children}</div>
+  <div className="flex items-start gap-1">
+    <div className="w-24 shrink-0 text-slate-600">{label}</div>
+    <div className="text-slate-900">{children}</div>
   </div>
 )
 
-const DetailTask = ({ task: taskProp }) => {
+const DetailTask = () => {
+  const { id } = useParams()
   const navigate = useNavigate()
-  const task = taskProp || demoTask
+  const { items, fetchTasks, deleteTask, loading } = useTask()
+  const [task, setTask] = useState(null)
+  const [busy, setBusy] = useState(false)
 
-  const handleEdit = () => navigate(`/tasks/edit/${task.id}`)
-  const handleDelete = () => {
+  useEffect(() => {
+    let mounted = true
+    const load = async () => {
+      if (!id) return
+
+      // Tìm trong state local trước
+      const local = (items || []).find((it) => String(it.id) === String(id))
+      if (local && mounted) {
+        setTask(local)
+        return
+      }
+
+      try {
+        await fetchTasks?.()
+        const after = (items || []).find((it) => String(it.id) === String(id))
+        if (after && mounted) setTask(after)
+        else if (mounted) toast.error("Không tìm thấy task.")
+      } catch (err) {
+        if (mounted) toast.error(err?.message || "Không thể tải task")
+      }
+    }
+
+    load()
+    return () => {
+      mounted = false
+    }
+  }, [id, items, fetchTasks])
+
+  const handleEdit = () => navigate(`/tasks/edit/${id}`)
+
+  const handleDelete = async () => {
     if (!confirm("Bạn có chắc muốn xóa task này?")) return
-    // Gọi API xóa task ở đây
-    navigate("/tasks")
+    setBusy(true)
+    try {
+      const action = await deleteTask(id)
+      if (action?.meta?.requestStatus !== "fulfilled") {
+        throw new Error(action?.payload || action?.error?.message || "Xóa thất bại")
+      }
+      toast.success("Xóa task thành công")
+      navigate("/tasks")
+    } catch (err) {
+      toast.error(err?.message || "Lỗi khi xóa task")
+    } finally {
+      setBusy(false)
+    }
   }
+
   const handleClose = () => navigate(-1)
+
+  if (loading && !task) {
+    return (
+      <div className="min-h-screen flex items-start justify-center bg-[#E1E5E8] p-6">
+        <div className="max-w-md w-full rounded-2xl border border-slate-100 bg-white p-6 shadow-sm text-center">
+          Đang tải...
+        </div>
+      </div>
+    )
+  }
+
+  if (!task) {
+    return (
+      <div className="min-h-screen flex items-start justify-center bg-[#E1E5E8] p-6">
+        <div className="max-w-md w-full rounded-2xl border border-slate-100 bg-white p-6 shadow-sm text-center">
+          Không tìm thấy task.
+          <div className="mt-4">
+            <button onClick={() => navigate("/tasks")} className="rounded-lg border px-4 py-2">
+              Quay về danh sách
+            </button>
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-[#E1E5E8] p-6">
@@ -94,7 +150,7 @@ const DetailTask = ({ task: taskProp }) => {
           <Row label="Checklist:">
             <div className="mt-1">
               {Array.isArray(task.checklist) && task.checklist.length > 0 ? (
-                <ul className="text-slate-700 list-disc">
+                <ul className="list-disc ml-5 space-y-1 text-slate-700">
                   {task.checklist.map((c, idx) => (
                     <li key={idx} className={c.done ? "line-through text-slate-500" : ""}>
                       {c.text}
@@ -109,12 +165,7 @@ const DetailTask = ({ task: taskProp }) => {
 
           {task.attachment_url && (
             <Row label="File đính kèm:">
-              <a
-                className="text-indigo-600 underline"
-                href={task.attachment_url}
-                target="_blank"
-                rel="noreferrer"
-              >
+              <a className="text-indigo-600 underline" href={task.attachment_url} target="_blank" rel="noreferrer">
                 Mở tệp
               </a>
             </Row>
@@ -125,21 +176,23 @@ const DetailTask = ({ task: taskProp }) => {
         <div className="border-t border-slate-300 pt-3 flex items-center justify-center gap-3">
           <button
             onClick={handleEdit}
-            className="rounded-lg bg-indigo-600 px-6 py-3 text-white hover:bg-indigo-500 disabled:opacity-50"
+            disabled={busy}
+            className="min-w-[100px] rounded-lg bg-indigo-600 px-6 py-3 text-white hover:bg-indigo-500 disabled:opacity-50"
           >
             Sửa
           </button>
 
           <button
             onClick={handleDelete}
-            className="rounded-lg border border-rose-500 text-rose-600 px-6 py-3 hover:bg-rose-50"
+            disabled={busy}
+            className="min-w-[100px] rounded-lg border border-rose-500 text-rose-600 px-6 py-3 hover:bg-rose-50"
           >
-            Xóa
+            {busy ? "Đang xoá…" : "Xoá"}
           </button>
 
           <button
             onClick={handleClose}
-            className="rounded-lg border border-slate-300 px-6 py-3 bg-white text-slate-700 hover:bg-slate-50"
+            className="min-w-[100px] rounded-lg border border-slate-300 px-6 py-3 bg-white text-slate-700 hover:bg-slate-50"
           >
             Đóng
           </button>
