@@ -2,20 +2,20 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit'
 import { fetchTasks, createTask, updateTask, deleteTask } from '@/api/taskApi.js'
 
-// ===== Thunks =====
+// Thunks
 export const fetchTasksThunk = createAsyncThunk(
   'tasks/fetch',
   async ({ userId, limit = 50, offset = 0 } = {}, { rejectWithValue }) => {
     const res = await fetchTasks({ userId, limit, offset })
     if (!res.ok) return rejectWithValue(res.error || 'Fetch tasks failed')
-    return res.data // mảng tasks
+    return res.data
   }
 )
 
 export const createTaskThunk = createAsyncThunk(
   'tasks/create',
   async (payload, { rejectWithValue }) => {
-    const res = await createTask(payload) // Supabase trả về mảng record mới
+    const res = await createTask(payload)
     if (!res.ok) return rejectWithValue(res.error || 'Create task failed')
     return Array.isArray(res.data) ? res.data[0] : res.data
   }
@@ -24,7 +24,7 @@ export const createTaskThunk = createAsyncThunk(
 export const updateTaskThunk = createAsyncThunk(
   'tasks/update',
   async ({ taskId, updates }, { rejectWithValue }) => {
-    const res = await updateTask(taskId, updates) // trả mảng record
+    const res = await updateTask(taskId, updates)
     if (!res.ok) return rejectWithValue(res.error || 'Update task failed')
     return Array.isArray(res.data) ? res.data[0] : res.data
   }
@@ -33,13 +33,13 @@ export const updateTaskThunk = createAsyncThunk(
 export const deleteTaskThunk = createAsyncThunk(
   'tasks/delete',
   async (taskId, { rejectWithValue }) => {
-    const res = await deleteTask(taskId) // 204 No Content khi ok
+    const res = await deleteTask(taskId)
     if (!res.ok) return rejectWithValue(res.error || 'Delete task failed')
     return taskId
   }
 )
 
-// ===== Slice =====
+// Slice
 const initialState = {
   items: [],
   loading: false,

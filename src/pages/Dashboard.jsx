@@ -1,21 +1,112 @@
 import { Plus, CheckCircle2, Circle, AlertCircle } from "lucide-react"
 import { Link } from "react-router-dom"
 
+import { formatDate } from "@/utils/date"
 import IconSquare from "@/components/ui/IconSquare"
 
 // Fake data
 const TASKS = [
-  { id: 1, title: "Quan trọng", priority: "high", deadline: "20/04/2024"},
-  { id: 2, title: "Ít quan trọng", priority: "high", deadline: "21/04/2024"},
-  { id: 3, title: "Quan trọng", priority: "low", deadline: "22/04/2024"},
-  { id: 4, title: "Ít quan trọng", priority: "medium", deadline: "24/04/2024"},
-  { id: 5, title: "Trễ hạn", priority: "low", deadline: "24/04/2024"},
+  {
+    id: "a3f61a47-29e9-4f52-9b23-d84dcb8e6b14",
+    user_id: "5e1f08c0-87ac-4c2f-8df6-9b6d0f35a1d1",
+    title: "Thiết kế giao diện trang Dashboard",
+    description: "Tạo layout tổng quan với thống kê số task theo trạng thái.",
+    deadline: "2025-11-10T09:00:00Z",
+    priority: "high",
+    status: "in_progress",
+    checklist: [
+      { text: "Vẽ wireframe", done: true },
+      { text: "Tạo component biểu đồ", done: false },
+    ],
+    attachment_url: "https://example.com/design-dashboard.png",
+    created_at: "2025-11-01T03:00:00Z",
+    updated_at: "2025-11-03T07:15:00Z",
+  },
+  {
+    id: "b7ce0c8e-2f0e-4c1e-bf7e-4e1bbd4e9210",
+    user_id: "5e1f08c0-87ac-4c2f-8df6-9b6d0f35a1d1",
+    title: "Hoàn thiện form tạo Task",
+    description: "Thêm validate, UX cho form tạo Task mới.",
+    deadline: "2025-11-12T15:30:00Z",
+    priority: "medium",
+    status: "todo",
+    checklist: [
+      { text: "Validate bắt buộc", done: true },
+      { text: "Hiển thị lỗi thân thiện", done: false },
+    ],
+    attachment_url: "",
+    created_at: "2025-11-02T02:10:00Z",
+    updated_at: "2025-11-04T10:20:00Z",
+  },
+  {
+    id: "c94b6f56-4d8d-4c1a-97f3-219f3fbb1a23",
+    user_id: "5e1f08c0-87ac-4c2f-8df6-9b6d0f35a1d1",
+    title: "Kết nối Supabase cho Task",
+    description: "Gọi API CRUD task, mapping dữ liệu về frontend.",
+    deadline: "2025-11-08T08:00:00Z",
+    priority: "high",
+    status: "done",
+    checklist: [
+      { text: "Tạo bảng tasks", done: true },
+      { text: "Viết taskApi.js", done: true },
+      { text: "Tích hợp Redux", done: false },
+    ],
+    attachment_url: "https://example.com/task-api-docs.pdf",
+    created_at: "2025-11-01T05:00:00Z",
+    updated_at: "2025-11-05T09:45:00Z",
+  },
+  {
+    id: "d1b0f7bb-0a6f-4e4c-9a43-148b4e9a6d9f",
+    user_id: "5e1f08c0-87ac-4c2f-8df6-9b6d0f35a1d1",
+    title: "Thêm checklist cho Task",
+    description: "UI thêm/xoá dòng checklist trong form Task.",
+    deadline: "2025-11-15T13:00:00Z",
+    priority: "low",
+    status: "in_progress",
+    checklist: [
+      { text: "Thiết kế UI checklist", done: true },
+      { text: "Xử lý state thêm/xoá", done: false },
+    ],
+    attachment_url: "",
+    created_at: "2025-11-03T01:30:00Z",
+    updated_at: "2025-11-06T11:00:00Z",
+  },
+  {
+    id: "e2f3c4d5-6a7b-8c9d-0e1f-223344556677",
+    user_id: "5e1f08c0-87ac-4c2f-8df6-9b6d0f35a1d1",
+    title: "Refactor Dashboard thống kê",
+    description: "Tối ưu component DonutChart, tách constants.",
+    deadline: "2025-11-05T18:00:00Z",
+    priority: "medium",
+    status: "todo",
+    checklist: [
+      { text: "Tách DonutChart riêng", done: true },
+      { text: "Nhận dữ liệu động từ Redux", done: false },
+    ],
+    attachment_url: "",
+    created_at: "2025-11-02T07:20:00Z",
+    updated_at: "2025-11-02T07:20:00Z",
+  },
 ]
 
 function PriorityBadge({ level }) {
-  const map = { "high": "text-red-600", "medium": "text-amber-600", "low": "text-emerald-600" }
-  return <span className={`font-medium ${map[level] || "text-slate-600"}`}>{level}</span>
+  const map = {
+    high: "text-red-600",
+    medium: "text-amber-600",
+    low: "text-emerald-600",
+  }
+
+  const label = level
+    ? level.charAt(0).toUpperCase() + level.slice(1)
+    : ""
+
+  return (
+    <span className={`font-medium ${map[level] || "text-slate-600"}`}>
+      {label}
+    </span>
+  )
 }
+
 
 function DonutChart({
   values = [3, 5, 2],
@@ -33,7 +124,7 @@ function DonutChart({
   return (
     <div className="flex items-center gap-6">
       <div className="rounded-full relative" style={{ width: size, height: size, background: bg }}>
-        <div className="absolute bg-white rounded-full" style={{ inset: ringWidth }}/>
+        <div className="absolute bg-white rounded-full" style={{ inset: ringWidth }} />
       </div>
       <ul className="space-y-2 text-sm">
         {labels.map((label, i) => (
@@ -101,17 +192,35 @@ const Dashboard = () => {
             </thead>
             <tbody>
               {TASKS.map((t, idx) => (
-                <tr key={t.id} className={`border-t ${idx === 0 ? "border-t-slate-300" : "border-slate-300"}`}>
+                <tr
+                  key={t.id}
+                  className={`border-t ${idx === 0 ? "border-t-slate-300" : "border-slate-300"}`}
+                >
                   <td className="pl-5 pr-2 py-3 flex items-center gap-2">
-                    <input type="checkbox" className="accent-slate-700" />
-                    <span className="text-slate-800">{t.title}</span>
+                    <input
+                      type="checkbox"
+                      className="accent-slate-700"
+                      checked={t.status === "done"}
+                      readOnly
+                    />
+                    <span
+                      className={`text-slate-800 ${
+                        t.status === "done" ? "line-through text-slate-400" : ""
+                      }`}
+                    >
+                      {t.title}
+                    </span>
                   </td>
                   <td className="px-2 py-3">
                     <PriorityBadge level={t.priority} />
                   </td>
-                  <td className="px-2 py-3 text-slate-700">{t.deadline}</td>
+                  <td className="px-2 py-3 text-slate-700">
+                    {formatDate(t.deadline)}
+                  </td>
                   <td className="px-5 py-3 text-right">
-                    <button className="text-slate-600 hover:text-slate-900 font-medium">Xem</button>
+                    <button className="text-slate-600 hover:text-slate-900 font-medium">
+                      Xem
+                    </button>
                   </td>
                 </tr>
               ))}
@@ -128,7 +237,7 @@ const Dashboard = () => {
           <div className="grid grid-cols-2 gap-3">
             <div className="rounded-xl border border-slate-200 p-4">
               <p className="text-slate-500 text-sm">Tổng số Task</p>
-              <p className="text-2xl font-semibold mt-1">{done+inProgress+overdue}</p>
+              <p className="text-2xl font-semibold mt-1">{done + inProgress + overdue}</p>
             </div>
             <div className="rounded-xl border border-slate-200 p-4">
               <p className="text-slate-500 text-sm">Đã hoàn thành</p>
