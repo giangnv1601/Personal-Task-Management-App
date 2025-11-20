@@ -98,27 +98,42 @@ const TasksPage = () => {
     [tasks, updateTask, optimisticToggleStatus]
   )
 
-  // Filter
-  const filteredTasks = useMemo(() => {
+  // Memo hoá filter function để tránh tạo lại logic filter mỗi lần render
+  const taskFilter = useMemo(() => {
     const term = debouncedQ.toLowerCase()
     const pf = priorityFilter.toLowerCase()
     const sf = statusFilter.toLowerCase()
     const df = deadlineFilter
 
-    return tasks.filter((t) => {
-      const matchesQ =
-        !term || (t.title || "").toLowerCase().includes(term)
-      const matchesPriority =
-        pf === "all" || String(t.priority).toLowerCase() === pf
-      const matchesStatus =
-        sf === "all" || String(t.status).toLowerCase() === sf
+    const isNoFilter =
+      !term && pf === "all" && sf === "all" && !df
+
+    if (isNoFilter) {
+      return (t) => true
+    }
+
+    return (t) => {
+      const title = (t.title || "").toLowerCase()
+      const priority = String(t.priority || "").toLowerCase()
+      const status = String(t.status || "").toLowerCase()
+
+      const matchesQ = !term || title.includes(term)
+      const matchesPriority = pf === "all" || priority === pf
+      const matchesStatus = sf === "all" || status === sf
       const matchesDeadline =
         !df || (t.deadline && isDeadlineBeforeOrEqual(t.deadline, df))
+
       return (
         matchesQ && matchesPriority && matchesStatus && matchesDeadline
       )
-    })
-  }, [tasks, debouncedQ, priorityFilter, statusFilter, deadlineFilter])
+    }
+  }, [debouncedQ, priorityFilter, statusFilter, deadlineFilter])
+
+  // Filter tasks
+  const filteredTasks = useMemo(
+    () => tasks.filter(taskFilter),
+    [tasks, taskFilter]
+  )
 
   // Pagination
   const {
@@ -293,10 +308,10 @@ const TasksPage = () => {
                   </div>
 
                   <div className="w-[140px] text-center">
-                    <PriorityTag priority={t.priority} showIcon={false}/>
+                    <PriorityTag priority={t.priority} showIcon={false} />
                   </div>
 
-                  <div className="w-[140px] text-center font-mono text-sm text-gray-700">
+                  <div className="w-[180px] text-center font-mono text-sm text-gray-700">
                     {t.deadline ? (
                       formatDateTime(t.deadline)
                     ) : (
