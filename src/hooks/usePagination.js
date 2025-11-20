@@ -1,8 +1,36 @@
 import { useCallback, useEffect, useMemo, useState } from "react"
 
-export default function usePagination(list, pageSize = 10, windowSize = 1) {
+/**
+ * usePagination
+ *
+ * @param {Array} list - Danh sách dữ liệu cần phân trang
+ * @param {number} pageSize - Số items mỗi trang
+ * @param {number} windowSize - Số trang hiển thị hai bên trang hiện tại
+ * @param {"default" | "full" | "minimal"} rangeStyle - Kiểu hiển thị page range
+ *
+ * @returns {{
+ *   page: number,
+ *   setPage: Function,
+ *   total: number,
+ *   totalPages: number,
+ *   startIdx: number,
+ *   endIdx: number,
+ *   pageItems: Array,
+ *   pageRange: Array<number | "…">,
+ *   goPrev: Function,
+ *   goNext: Function,
+ *   goTo: Function
+ * }}
+ */
+export default function usePagination(
+  list,
+  pageSize = 10,
+  windowSize = 1,
+  rangeStyle = "default"
+) {
   const [page, setPage] = useState(1)
 
+  // Tính toán dữ liệu phân trang
   const { total, totalPages, startIdx, endIdx, pageItems } = useMemo(() => {
     const total = Array.isArray(list) ? list.length : 0
     const totalPages = Math.max(1, Math.ceil(total / pageSize))
@@ -12,32 +40,68 @@ export default function usePagination(list, pageSize = 10, windowSize = 1) {
     return { total, totalPages, startIdx, endIdx, pageItems }
   }, [list, page, pageSize])
 
+  // Khi data ít lại → giảm trang nếu cần
   useEffect(() => {
     if (page > totalPages) setPage(totalPages)
   }, [totalPages, page])
 
-  const goPrev = useCallback(() => setPage(p => Math.max(1, p - 1)), [])
-  const goNext = useCallback(() => setPage(p => Math.min(totalPages, p + 1)), [totalPages])
-  const goTo = useCallback((p) => setPage(() => Math.min(Math.max(1, p), totalPages)), [totalPages])
+  // Điều hướng
+  const goPrev = useCallback(() => setPage((p) => Math.max(1, p - 1)), [])
+  const goNext = useCallback(
+    () => setPage((p) => Math.min(totalPages, p + 1)),
+    [totalPages]
+  )
+  const goTo = useCallback(
+    (p) => setPage(() => Math.min(Math.max(1, p), totalPages)),
+    [totalPages]
+  )
 
+  // Tính toán range số trang
   const pageRange = useMemo(() => {
-    const range = []
-    const total = totalPages
-    const add = (p) => range.push(p)
-    if (total === 0) return []
-    add(1)
-    let left = Math.max(2, page - windowSize)
-    let right = Math.min(total - 1, page + windowSize)
-    if (left > 2) range.push("…")
-    for (let p = left; p <= right; p++) {
-      if (p !== 1 && p !== total) add(p)
+    if (rangeStyle === "minimal") return [] // chỉ dùng Prev/Next
+
+    if (rangeStyle === "full") {
+      return Array.from({ length: totalPages }, (_, i) => i + 1)
     }
-    if (right < total - 1) range.push("…")
-    if (total > 1 && total !== range[range.length - 1]) add(total)
+
+    // default style
+    const range = []
+    if (totalPages <= 1) return [1]
+
+    const left = Math.max(1, page - windowSize)
+    const right = Math.min(totalPages, page + windowSize)
+
+    // luôn thêm trang đầu
+    if (left > 1) {
+      range.push(1)
+      if (left > 2) range.push("…")
+    }
+
+    // thêm windowSize hai bên
+    for (let p = left; p <= right; p++) {
+      range.push(p)
+    }
+
+    // luôn thêm trang cuối
+    if (right < totalPages) {
+      if (right < totalPages - 1) range.push("…")
+      range.push(totalPages)
+    }
+
     return range
-  }, [page, totalPages, windowSize])
+  }, [page, totalPages, windowSize, rangeStyle])
 
-  return { page, setPage, total, totalPages, startIdx, endIdx, pageItems, pageRange, goPrev, goNext, goTo }
+  return {
+    page,
+    setPage,
+    total,
+    totalPages,
+    startIdx,
+    endIdx,
+    pageItems,
+    pageRange,
+    goPrev,
+    goNext,
+    goTo,
+  }
 }
-
-
