@@ -4,38 +4,8 @@ import { toast } from "sonner"
 import useTask from "@/hooks/useTask"
 import { formatDateTime, formatRelativeTime } from "@/utils/date"
 import ConfirmDialog from "@/components/ui/ConfirmDialog"
-
-const PriorityBadge = ({ value }) => {
-  const map = {
-    high: "bg-red-500 text-white",
-    medium: "bg-orange-500 text-white",
-    low: "bg-slate-400 text-white",
-  }
-  return (
-    <span className={`inline-block rounded px-2 py-0.5 text-sm ${map[value]}`}>
-      {value ? value[0].toUpperCase() + value.slice(1) : "—"}
-    </span>
-  )
-}
-
-const StatusBadge = ({ value }) => {
-  const label =
-    value === "in_progress"
-      ? "Đang làm"
-      : value === "done"
-      ? "Hoàn thành"
-      : "Chưa làm"
-  const map = {
-    todo: "bg-slate-200 text-slate-800",
-    in_progress: "bg-yellow-300 text-yellow-900",
-    done: "bg-green-200 text-green-800",
-  }
-  return (
-    <span className={`inline-block rounded px-2 py-0.5 text-sm ${map[value]}`}>
-      {label}
-    </span>
-  )
-}
+import PriorityBadge from "@/components/ui/PriorityBadge"
+import StatusBadge from "@/components/ui/StatusBadge"
 
 const Row = ({ label, children }) => (
   <div className="flex items-start gap-1">

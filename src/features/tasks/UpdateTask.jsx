@@ -6,9 +6,12 @@ import { toLocalInput, toUTCISOString } from "@/utils/date"
 import { validateDeadline, validateText } from "@/utils/validate"
 import useTask from "@/hooks/useTask"
 import ConfirmDialog from "@/components/ui/ConfirmDialog"
-
-const PRIORITIES = ["low", "medium", "high"]
-const STATUSES = ["todo", "in_progress", "done"]
+import {
+  PRIORITIES,
+  STATUSES,
+  PRIORITY_LABEL,
+  STATUS_LABEL,
+} from "@/constants/task"
 
 export default function UpdateTask() {
   const init = useMemo(
@@ -200,9 +203,11 @@ export default function UpdateTask() {
               disabled={busy}
               {...register("status")}
             >
-              <option value="todo">Chưa hoàn thành</option>
-              <option value="in_progress">Đang làm</option>
-              <option value="done">Đã hoàn thành</option>
+              {STATUSES.map((s) => (
+                <option key={s} value={s}>
+                  {STATUS_LABEL[s] ?? s}
+                </option>
+              ))}
             </select>
             {errors.status && (
               <p role="alert" aria-live="polite" className="text-sm text-red-600 mt-1">
@@ -307,9 +312,11 @@ export default function UpdateTask() {
               disabled={busy}
               {...register("priority")}
             >
-              <option value="low">Low</option>
-              <option value="medium">Medium</option>
-              <option value="high">High</option>
+              {PRIORITIES.map((p) => (
+                <option key={p} value={p}>
+                  {PRIORITY_LABEL[p] ?? p}
+                </option>
+              ))}
             </select>
             {errors.priority && (
               <p role="alert" aria-live="polite" className="text-sm text-red-600 mt-1">
