@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react"
 import { useNavigate, useParams } from "react-router-dom"
 import { toast } from "sonner"
 import useTask from "@/hooks/useTask"
-import { formatDate } from "@/utils/date"
+import { formatDateTime, formatRelativeTime } from "@/utils/date"
 import ConfirmDialog from "@/components/ui/ConfirmDialog"
 
 const PriorityBadge = ({ value }) => {
@@ -168,14 +168,20 @@ const DetailTask = () => {
           </Row>
 
           <Row label="Deadline:">
-            <div className="font-semibold">
-              {task.deadline ? formatDate(task.deadline) : "—"}
+            <div className="font-mono">
+              {formatDateTime(task.deadline)}{" "}
+              <span className="ml-2 text-xs text-slate-500">
+                {formatRelativeTime(task.deadline)}
+              </span>
             </div>
           </Row>
 
           <Row label="Ngày tạo:">
-            <div className="font-semibold">
-              {task.created_at ? formatDate(task.created_at) : "—"}
+            <div className="font-mono">
+              {formatDateTime(task.created_at)}{" "}
+              <span className="ml-2 text-xs text-slate-500">
+                {formatRelativeTime(task.created_at)}
+              </span>
             </div>
           </Row>
 

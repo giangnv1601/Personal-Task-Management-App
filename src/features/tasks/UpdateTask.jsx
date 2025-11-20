@@ -3,7 +3,7 @@ import { useParams, useNavigate } from "react-router-dom"
 import { useForm, Controller, useFieldArray } from "react-hook-form"
 import { toast } from "sonner"
 import { toLocalInput, toUTCISOString } from "@/utils/date"
-import { validateDeadline } from "@/utils/validate"
+import { validateDeadline, validateText } from "@/utils/validate"
 import useTask from "@/hooks/useTask"
 import ConfirmDialog from "@/components/ui/ConfirmDialog"
 
@@ -35,7 +35,8 @@ export default function UpdateTask() {
     handleSubmit,
     reset,
     setError,
-    formState: { errors, isSubmitting, isDirty }
+    formState: { errors, isSubmitting, isDirty },
+    trigger,
   } = useForm({
     defaultValues: init,
     mode: "onChange",
@@ -44,7 +45,8 @@ export default function UpdateTask() {
   const { fields, append, remove } = useFieldArray({ control, name: "checklist" })
 
   const [isDeleting, setIsDeleting] = useState(false)
-  const [confirmType, setConfirmType] = useState(null) 
+  const [confirmType, setConfirmType] = useState(null)
+  const [allowPastDeadline, setAllowPastDeadline] = useState(true)
 
   const busy = loading || isSubmitting || isDeleting
 
@@ -80,7 +82,9 @@ export default function UpdateTask() {
     }
 
     load()
-    return () => (mounted = false)
+    return () => {
+      mounted = false
+    }
   }, [id, fetchTasks, items, reset, init])
 
   // Cảnh báo khi reload tab khi có thay đổi
@@ -93,6 +97,11 @@ export default function UpdateTask() {
     window.addEventListener("beforeunload", handle)
     return () => window.removeEventListener("beforeunload", handle)
   }, [isDirty])
+
+  // Khi bật/tắt "cho phép deadline quá khứ" → re-validate deadline
+  useEffect(() => {
+    trigger("deadline")
+  }, [allowPastDeadline, trigger])
 
   // Submit thực
   const onSubmitReal = async (data) => {
@@ -209,7 +218,9 @@ export default function UpdateTask() {
               className="w-full rounded-lg border px-3 py-2"
               placeholder="Nhập tên task…"
               disabled={busy}
-              {...register("title", { required: "Tên task là bắt buộc" })}
+              {...register("title", {
+                validate: (v) => validateText(v, { min: 1, max: 255 }),
+              })}
             />
             {errors.title && (
               <p role="alert" aria-live="polite" className="text-sm text-red-600 mt-1">
@@ -226,37 +237,66 @@ export default function UpdateTask() {
               className="w-full rounded-lg border px-3 py-2"
               placeholder="Mô tả ngắn…"
               disabled={busy}
-              {...register("description")}
+              {...register("description", {
+                validate: (v) => validateText(v, { max: 2000 }),
+              })}
             />
           </div>
 
           {/* Deadline */}
-          <div className="flex items-center gap-4">
-            <label className="w-28 text-sm font-medium mb-1">Deadline</label>
-            <Controller
-              control={control}
-              name="deadline"
-              rules={{ validate: validateDeadline }}
-              render={({ field: { value, onChange }, fieldState }) => (
-                <>
-                  <input
-                    type="datetime-local"
-                    step="60"
-                    className="ml-auto w-[260px] rounded-lg border px-3 py-2"
-                    value={value ? toLocalInput(value) : ""}
-                    onChange={(e) =>
-                      onChange(e.target.value ? toUTCISOString(e.target.value) : null)
-                    }
-                    disabled={busy}
-                  />
-                  {fieldState.error && (
-                    <p role="alert" aria-live="polite" className="text-sm text-red-600 mt-1">
-                      {fieldState.error.message}
-                    </p>
-                  )}
-                </>
-              )}
-            />
+          <div>
+            <div className="flex items-center gap-4">
+              <label className="w-28 text-sm font-medium mb-1">Deadline</label>
+              <Controller
+                control={control}
+                name="deadline"
+                rules={{
+                  validate: (v) => validateDeadline(v, { allowPast: allowPastDeadline }),
+                }}
+                render={({ field: { value, onChange }, fieldState }) => (
+                  <>
+                    <input
+                      type="datetime-local"
+                      step="60"
+                      className="ml-auto w-[260px] rounded-lg border px-3 py-2"
+                      value={value ? toLocalInput(value) : ""}
+                      onChange={(e) =>
+                        onChange(
+                          e.target.value ? toUTCISOString(e.target.value) : null
+                        )
+                      }
+                      disabled={busy}
+                    />
+                    {fieldState.error && (
+                      <p
+                        role="alert"
+                        aria-live="polite"
+                        className="mt-1 text-sm text-red-600"
+                      >
+                        {fieldState.error.message}
+                      </p>
+                    )}
+                  </>
+                )}
+              />
+            </div>
+
+            <div className="mt-1 ml-28 flex items-center gap-2">
+              <input
+                type="checkbox"
+                id="allowPastDeadlineUpdate"
+                checked={allowPastDeadline}
+                onChange={(e) => setAllowPastDeadline(e.target.checked)}
+                className="rounded border"
+                disabled={busy}
+              />
+              <label
+                htmlFor="allowPastDeadlineUpdate"
+                className="text-sm text-gray-600"
+              >
+                Cho phép deadline trong quá khứ
+              </label>
+            </div>
           </div>
 
           {/* Priority */}
@@ -309,7 +349,8 @@ export default function UpdateTask() {
               onClick={() =>
                 append({
                   id:
-                    globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random()}`,
+                    globalThis.crypto?.randomUUID?.() ||
+                    `${Date.now()}-${Math.random()}`,
                   text: "",
                   done: false,
                 })

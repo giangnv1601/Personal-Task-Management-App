@@ -2,7 +2,7 @@ import React, { useEffect, useMemo } from "react"
 import { Plus, CheckCircle2, Circle, AlertCircle } from "lucide-react"
 import { Link, useNavigate } from "react-router-dom"
 
-import { formatDate } from "@/utils/date"
+import { formatDateTime } from "@/utils/date"
 import IconSquare from "@/components/ui/IconSquare"
 import useTask from "@/hooks/useTask"
 import useAuth from "@/hooks/useAuth"
@@ -196,8 +196,8 @@ const Dashboard = () => {
                     <td className="px-2 py-3">
                       <PriorityBadge level={t.priority} />
                     </td>
-                    <td className="px-2 py-3 text-slate-700">
-                      {t.deadline ? formatDate(t.deadline) : "—"}
+                    <td className="px-2 py-3 font-mono text-slate-700">
+                      {t.deadline ? formatDateTime(t.deadline) : "—"}
                     </td>
                     <td className="px-5 py-3 text-right">
                       <button
