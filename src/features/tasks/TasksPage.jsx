@@ -15,7 +15,7 @@ import PriorityTag from "@/components/ui/PriorityTag"
 import useAuth from "@/hooks/useAuth"
 import usePagination from "@/hooks/usePagination"
 import useTask from "@/hooks/useTask"
-import { formatDate, isDeadlineBeforeOrEqual } from "@/utils/date"
+import { formatDateTime, isDeadlineBeforeOrEqual } from "@/utils/date"
 
 const PAGE_SIZE = 10
 
@@ -298,7 +298,7 @@ const TasksPage = () => {
 
                   <div className="w-[140px] text-center font-mono text-sm text-gray-700">
                     {t.deadline ? (
-                      formatDate(t.deadline)
+                      formatDateTime(t.deadline)
                     ) : (
                       <span className="text-gray-400">—</span>
                     )}
