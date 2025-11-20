@@ -1,4 +1,4 @@
-import React, { useMemo, useEffect } from "react"
+import React, { useMemo, useEffect, useState } from "react"
 import { useForm, useFieldArray } from "react-hook-form"
 import { useSelector } from "react-redux"
 import { toast } from "sonner"
@@ -15,6 +15,8 @@ function CreateTask({ defaultValues, onCancel, onSuccess }) {
   const userId = useSelector((s) => s.auth?.user?.id)
   const navigate = useNavigate()
 
+  const [allowPastDeadline, setAllowPastDeadline] = useState(false)
+
   const normalizedDefaults = useMemo(() => {
     const dv = defaultValues || {}
     return {
@@ -23,10 +25,7 @@ function CreateTask({ defaultValues, onCancel, onSuccess }) {
       priority: "low",
       status: "todo",
       attachment_url: "",
-      checklist: [
-        { text: "Item 1", done: false },
-        { text: "Item 2", done: false },
-      ],
+      checklist: [],
       ...dv,
       deadline: toLocalInput(dv.deadline || ""),
     }
@@ -47,7 +46,9 @@ function CreateTask({ defaultValues, onCancel, onSuccess }) {
   const onSubmit = async (data) => {
     if (!userId) return toast.error("Thiếu user đăng nhập")
 
-    if (!isValidUrl(data.attachment_url)) return toast.error("URL không hợp lệ")
+    if (data.attachment_url && !isValidUrl(data.attachment_url)) {
+      return toast.error("URL không hợp lệ")
+    }
 
     const payload = {
       ...data,
@@ -55,7 +56,10 @@ function CreateTask({ defaultValues, onCancel, onSuccess }) {
       title: data.title.trim(),
       description: (data.description || "").trim(),
       deadline: toUTCISOString(data.deadline),
-      checklist: data.checklist.map((c) => ({ text: c.text.trim(), done: !!c.done })),
+      checklist: (data.checklist || []).map((c) => ({
+        text: c.text.trim(),
+        done: !!c.done,
+      })),
     }
 
     const action = await createTask(payload)
@@ -107,7 +111,11 @@ function CreateTask({ defaultValues, onCancel, onSuccess }) {
           <div>
             <label className="block text-sm mb-1">Ưu tiên & Deadline</label>
             <div className="flex gap-2">
-              <select {...register("priority")} className="w-28 rounded-lg border px-3 py-2">
+              <select
+                {...register("priority")}
+                className="w-28 rounded-lg border px-3 py-2"
+                disabled={creating}
+              >
                 {PRIORITIES.map((p) => (
                   <option key={p} value={p}>
                     {p[0].toUpperCase() + p.slice(1)}
@@ -118,21 +126,42 @@ function CreateTask({ defaultValues, onCancel, onSuccess }) {
               <input
                 type="datetime-local"
                 step="60"
-                min={nowLocalMin}
+                min={allowPastDeadline ? undefined : nowLocalMin}
                 {...register("deadline", {
                   required: "Chọn deadline",
-                  validate: validateDeadline,
+                  validate: allowPastDeadline ? undefined : validateDeadline,
                 })}
                 className="flex-1 rounded-lg border px-3 py-2"
+                disabled={creating}
               />
             </div>
-            {errors.deadline && <p className="text-xs text-rose-600">{errors.deadline.message}</p>}
+            {errors.deadline && (
+              <p className="text-xs text-rose-600">{errors.deadline.message}</p>
+            )}
+
+            <div className="flex items-center gap-2 mt-1">
+              <input
+                type="checkbox"
+                id="allowPastDeadline"
+                checked={allowPastDeadline}
+                onChange={(e) => setAllowPastDeadline(e.target.checked)}
+                className="rounded border"
+                disabled={creating}
+              />
+              <label htmlFor="allowPastDeadline" className="text-sm text-gray-600">
+                Cho phép deadline trong quá khứ
+              </label>
+            </div>
           </div>
 
           {/* Status */}
           <div>
             <label className="block text-sm mb-1">Trạng thái</label>
-            <select {...register("status")} className="w-full rounded-lg border px-3 py-2">
+            <select
+              {...register("status")}
+              className="w-full rounded-lg border px-3 py-2"
+              disabled={creating}
+            >
               {STATUSES.map((s) => (
                 <option key={s} value={s}>
                   {s === "in_progress" ? "In progress" : s[0].toUpperCase() + s.slice(1)}
@@ -146,7 +175,7 @@ function CreateTask({ defaultValues, onCancel, onSuccess }) {
             <p className="text-sm font-medium mb-1">Checklist</p>
             {fields.map((item, i) => (
               <div key={item.id} className="flex items-center gap-2 mb-1">
-                <input type="checkbox" {...register(`checklist.${i}.done`)} />
+                <input type="checkbox" {...register(`checklist.${i}.done`)} disabled={creating} />
                 <div className="flex-1">
                   <input
                     {...register(`checklist.${i}.text`, { required: "Không để trống" })}
@@ -159,7 +188,12 @@ function CreateTask({ defaultValues, onCancel, onSuccess }) {
                     </p>
                   )}
                 </div>
-                <button type="button" onClick={() => remove(i)} className="text-sm text-red-600">
+                <button
+                  type="button"
+                  onClick={() => remove(i)}
+                  className="text-sm text-red-600"
+                  disabled={creating}
+                >
                   Xóa
                 </button>
               </div>
@@ -168,6 +202,7 @@ function CreateTask({ defaultValues, onCancel, onSuccess }) {
               type="button"
               onClick={() => append({ text: "", done: false })}
               className="text-indigo-600 text-sm"
+              disabled={creating}
             >
               + Thêm checklist
             </button>
@@ -179,10 +214,12 @@ function CreateTask({ defaultValues, onCancel, onSuccess }) {
             <input
               type="url"
               {...register("attachment_url", {
-                validate: (v) => isValidUrl(v) || "URL không hợp lệ",
+                validate: (v) =>
+                  !v || isValidUrl(v) || "URL không hợp lệ",
               })}
               placeholder="https://…"
               className="w-full rounded-lg border px-3 py-2"
+              disabled={creating}
             />
             {errors.attachment_url && (
               <p className="text-xs text-rose-600">{errors.attachment_url.message}</p>
@@ -202,6 +239,7 @@ function CreateTask({ defaultValues, onCancel, onSuccess }) {
               type="button"
               onClick={handleCancel}
               className="rounded-lg border px-5 py-2.5 bg-white hover:bg-slate-50"
+              disabled={creating}
             >
               Huỷ
             </button>
