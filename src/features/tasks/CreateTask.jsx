@@ -5,7 +5,7 @@ import { toast } from "sonner"
 import { useNavigate } from "react-router-dom"
 import useTask from "@/hooks/useTask"
 import { toLocalInput, toUTCISOString } from "@/utils/date"
-import { isValidUrl, validateDeadline } from "@/utils/validate"
+import { isValidUrl, validateDeadline, validateText } from "@/utils/validate"
 
 const PRIORITIES = ["low", "medium", "high"]
 const STATUSES = ["todo", "in_progress", "done"]
@@ -87,7 +87,9 @@ function CreateTask({ defaultValues, onCancel, onSuccess }) {
           <div>
             <label className="block text-sm mb-1">Tên task</label>
             <input
-              {...register("title", { required: "Vui lòng nhập tên task" })}
+              {...register("title", {
+                validate: (v) => validateText(v, { min: 1, max: 255 }),
+              })}
               className="w-full rounded-lg border px-3 py-2"
               placeholder="Nhập tiêu đề…"
               disabled={creating}
@@ -103,7 +105,9 @@ function CreateTask({ defaultValues, onCancel, onSuccess }) {
           <div>
             <label className="block text-sm mb-1">Mô tả</label>
             <textarea
-              {...register("description")}
+              {...register("description", {
+                validate: (v) => validateText(v, { max: 2000 }),
+              })}
               rows={2}
               className="w-full rounded-lg border px-3 py-2"
               placeholder="Mô tả ngắn…"
@@ -133,19 +137,23 @@ function CreateTask({ defaultValues, onCancel, onSuccess }) {
                 min={allowPastDeadline ? undefined : nowLocalMin}
                 {...register("deadline", {
                   required: "Chọn deadline",
-                  validate: allowPastDeadline ? undefined : validateDeadline,
+                  validate: (v) => validateDeadline(v, { allowPast: allowPastDeadline }),
                 })}
                 className="flex-1 rounded-lg border px-3 py-2"
                 disabled={creating}
               />
             </div>
             {errors.deadline && (
-              <p role="alert" aria-live="polite" className="text-xs text-rose-600">
+              <p
+                role="alert"
+                aria-live="polite"
+                className="text-xs text-rose-600"
+              >
                 {errors.deadline.message}
               </p>
             )}
 
-            <div className="flex items-center gap-2 mt-1">
+            <div className="mt-1 flex items-center gap-2">
               <input
                 type="checkbox"
                 id="allowPastDeadline"
@@ -159,6 +167,7 @@ function CreateTask({ defaultValues, onCancel, onSuccess }) {
               </label>
             </div>
           </div>
+
 
           {/* Status */}
           <div>
