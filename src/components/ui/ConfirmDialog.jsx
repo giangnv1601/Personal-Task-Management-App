@@ -1,4 +1,5 @@
 import React from "react"
+import PropTypes from "prop-types"
 import { X } from "lucide-react"
 
 export default function ConfirmDialog({
@@ -47,4 +48,23 @@ export default function ConfirmDialog({
       </div>
     </div>
   )
+}
+
+ConfirmDialog.propTypes = {
+  open: PropTypes.bool.isRequired,
+  title: PropTypes.string,
+  message: PropTypes.string,
+  confirmText: PropTypes.string,
+  cancelText: PropTypes.string,
+  onConfirm: PropTypes.func,
+  onCancel: PropTypes.func,
+}
+
+ConfirmDialog.defaultProps = {
+  title: "Xác nhận",
+  message: "Bạn có chắc muốn tiếp tục?",
+  confirmText: "Đồng ý",
+  cancelText: "Hủy",
+  onConfirm: () => {},
+  onCancel: () => {},
 }

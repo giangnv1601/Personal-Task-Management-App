@@ -1,4 +1,5 @@
 import React from "react"
+import PropTypes from "prop-types"
 import { PRIORITY_LABEL } from "@/constants/task"
 
 const MAP = {
@@ -16,4 +17,11 @@ export default function PriorityBadge({ value }) {
       {label === "—" ? "—" : label}
     </span>
   )
+}
+
+PriorityBadge.propTypes = {
+  value: PropTypes.string,
+}
+PriorityBadge.defaultProps = {
+  value: "",
 }

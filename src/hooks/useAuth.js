@@ -10,6 +10,10 @@ import {
   selectIsAuthenticated,
 } from '@/features/auth/AuthSlice.js'
 
+/**
+ * useAuth - hook to access auth state and actions
+ * @returns {{ user: object|null, loading: boolean, error: any, isAuthenticated: boolean, login: function, logout: function, fetchProfile: function }}
+ */
 export default function useAuth() {
   const dispatch = useDispatch()
 

@@ -1,4 +1,8 @@
-// ISO/string/Date -> "YYYY-MM-DDTHH:mm" (local)
+/**
+ * Convert ISO or Date to value usable by <input type="datetime-local"> (local)
+ * @param {string|Date|null} d ISO string or Date
+ * @returns {string|null} local "YYYY-MM-DDTHH:mm" or null
+ */
 export const toLocalInput = (d) => {
   if (!d) return ""
   const dt = typeof d === "string" ? new Date(d) : d
@@ -14,15 +18,22 @@ export const toLocalInput = (d) => {
   return `${yyyy}-${MM}-${dd}T${hh}:${mm}`
 }
 
-// Chuyển local datetime "YYYY-MM-DDTHH:mm" về UTC ISO
+/**
+ * Convert local "YYYY-MM-DDTHH:mm" to UTC ISO string
+ * @param {string} localDatetime - "YYYY-MM-DDTHH:mm"
+ * @returns {string} ISO string in UTC
+ */
 export const toUTCISOString = (localDatetime) => {
   if (!localDatetime) return null
   const date = new Date(localDatetime)
   return isNaN(date.getTime()) ? null : date.toISOString()
 }
 
-// Hiển thị cả ngày + giờ (theo vi-VN)
-// Ví dụ: "14/02/2025 09:32"
+/**
+ * Format ISO datetime to "DD/MM/YYYY HH:mm" (vi-VN)
+ * @param {string|Date|null} iso
+ * @returns {string} formatted datetime or "—" on invalid
+ */
 export const formatDateTime = (iso) => {
   if (!iso) return "—"
   const d = new Date(iso)
@@ -38,12 +49,11 @@ export const formatDateTime = (iso) => {
   return `${dd}/${mm}/${yyyy} ${hh}:${mi}`
 }
 
-// Ví dụ:
-// - "5 phút trước"
-// - "2 giờ trước"
-// - "hôm qua"
-// - "trong 3 ngày"
-// - "vừa xong"
+/**
+ * Human readable relative time fallback
+ * @param {string|Date} iso
+ * @returns {string}
+ */
 export const formatRelativeTime = (iso) => {
   if (!iso) return "—"
   const past = new Date(iso)
