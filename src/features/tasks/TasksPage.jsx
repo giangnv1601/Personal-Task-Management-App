@@ -293,7 +293,7 @@ const TasksPage = () => {
                   </div>
 
                   <div className="w-[140px] text-center">
-                    <PriorityTag priority={t.priority} />
+                    <PriorityTag priority={t.priority} showIcon={false}/>
                   </div>
 
                   <div className="w-[140px] text-center font-mono text-sm text-gray-700">
