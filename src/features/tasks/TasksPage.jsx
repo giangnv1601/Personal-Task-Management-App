@@ -22,7 +22,15 @@ const PAGE_SIZE = 10
 const TasksPage = () => {
   // Hooks
   const { user } = useAuth()
-  const { items, loading, updating, error, fetchTasks, updateTask } = useTask()
+  const {
+    items,
+    loading,
+    updating,
+    error,
+    fetchTasks,
+    updateTask,
+    optimisticToggleStatus,
+  } = useTask()
 
   // State
   const [q, setQ] = useState("")
@@ -58,16 +66,18 @@ const TasksPage = () => {
     [items]
   )
 
-  // Toggle checkbox
+  // Toggle checkbox với optimistic update
   const toggleDone = useCallback(
     async (id) => {
       const task = tasks.find((t) => t.id === id)
       if (!task) return
 
+      const nextStatus = task.done ? "todo" : "done"
+
+      optimisticToggleStatus(id)
       setTogglingId(id)
 
       try {
-        const nextStatus = task.done ? "todo" : "done"
         const action = await updateTask(id, {
           status: nextStatus,
           updated_at: new Date().toISOString(),
@@ -85,7 +95,7 @@ const TasksPage = () => {
         setTogglingId(null)
       }
     },
-    [tasks, updateTask]
+    [tasks, updateTask, optimisticToggleStatus]
   )
 
   // Filter
