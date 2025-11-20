@@ -71,7 +71,7 @@ export const logoutThunk = createAsyncThunk(
   async (_, { getState, rejectWithValue }) => {
     const { auth } = getState()
     const token = auth?.access_token
-    if (!token) return { ok: true } // không có token vẫn coi như thoát
+    if (!token) return { ok: true }
     const res = await logoutUser(token)
     if (!res.ok) return rejectWithValue(res.error || 'Đăng xuất thất bại')
     return { ok: true }
@@ -100,7 +100,7 @@ const authSlice = createSlice({
     user: init.user,
     access_token: init.access_token,
     refresh_token: init.refresh_token,
-    remember: init.remember,         // 'local' | 'session' | null
+    remember: init.remember, // 'local' | 'session' | null
     isAuthenticated: init.isAuthenticated,
     loading: false,
     error: null,
@@ -188,7 +188,7 @@ const authSlice = createSlice({
 
 export const { hydrateFromStorage } = authSlice.actions
 
-// Selectors (UI dùng để đọc state gọn gàng)
+// Selectors
 export const selectAuth = (state) => state.auth
 export const selectAuthUser = (state) => state.auth.user
 export const selectAuthLoading = (state) => state.auth.loading

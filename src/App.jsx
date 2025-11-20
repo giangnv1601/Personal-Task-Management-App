@@ -11,6 +11,7 @@ import TasksPage from "@/features/tasks/TasksPage.jsx"
 import Dashboard from "@/pages/Dashboard.jsx"
 import Profile from "@/pages/Profile.jsx"
 import UpdateTask from "@/features/tasks/UpdateTask.jsx"
+import DetailTask from "@/features/tasks/DetailTask.jsx"
 
 export default function App() {
   return (
@@ -30,6 +31,7 @@ export default function App() {
             <Route path="/profile" element={<Profile />} />
             <Route path="/tasks/new" element={<CreateTask />} />
             <Route path="/tasks/edit/:id" element={<UpdateTask />} />
+            <Route path="/tasks/detail/:id" element={<DetailTask />} />
           </Route>
         </Route>
 

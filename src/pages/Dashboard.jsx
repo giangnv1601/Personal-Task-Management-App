@@ -1,20 +1,21 @@
+import React, { useEffect, useMemo } from "react"
 import { Plus, CheckCircle2, Circle, AlertCircle } from "lucide-react"
-import { Link } from "react-router-dom"
+import { Link, useNavigate } from "react-router-dom"
 
+import { formatDate } from "@/utils/date"
 import IconSquare from "@/components/ui/IconSquare"
-
-// Fake data
-const TASKS = [
-  { id: 1, title: "Quan trọng", priority: "high", deadline: "20/04/2024"},
-  { id: 2, title: "Ít quan trọng", priority: "high", deadline: "21/04/2024"},
-  { id: 3, title: "Quan trọng", priority: "low", deadline: "22/04/2024"},
-  { id: 4, title: "Ít quan trọng", priority: "medium", deadline: "24/04/2024"},
-  { id: 5, title: "Trễ hạn", priority: "low", deadline: "24/04/2024"},
-]
+import useTask from "@/hooks/useTask"
 
 function PriorityBadge({ level }) {
-  const map = { "high": "text-red-600", "medium": "text-amber-600", "low": "text-emerald-600" }
-  return <span className={`font-medium ${map[level] || "text-slate-600"}`}>{level}</span>
+  const map = {
+    high: "text-red-600",
+    medium: "text-amber-600",
+    low: "text-emerald-600",
+  }
+
+  const label = level ? level.charAt(0).toUpperCase() + level.slice(1) : ""
+
+  return <span className={`font-medium ${map[level] || "text-slate-600"}`}>{label}</span>
 }
 
 function DonutChart({
@@ -33,7 +34,7 @@ function DonutChart({
   return (
     <div className="flex items-center gap-6">
       <div className="rounded-full relative" style={{ width: size, height: size, background: bg }}>
-        <div className="absolute bg-white rounded-full" style={{ inset: ringWidth }}/>
+        <div className="absolute bg-white rounded-full" style={{ inset: ringWidth }} />
       </div>
       <ul className="space-y-2 text-sm">
         {labels.map((label, i) => (
@@ -49,9 +50,38 @@ function DonutChart({
 }
 
 const Dashboard = () => {
-  const done = 3
-  const inProgress = 5
-  const overdue = 2
+  const navigate = useNavigate()
+  const { items, loading, error, fetchTasks } = useTask()
+
+  useEffect(() => {
+    fetchTasks?.()
+  }, [fetchTasks])
+
+  const list = items || []
+
+  // Tính thống kê
+  const { done, inProgress, overdue } = useMemo(() => {
+    const now = Date.now()
+    let d = 0
+    let ip = 0
+    let od = 0
+
+    for (const t of list) {
+      if (t.status === "done") d++
+      if (t.status === "in_progress") ip++
+
+      if (t.deadline) {
+        const ts = Date.parse(t.deadline)
+        if (!isNaN(ts) && ts < now && t.status !== "done") {
+          od++
+        }
+      }
+    }
+
+    return { done: d, inProgress: ip, overdue: od }
+  }, [list])
+
+  const hasData = list.length > 0
 
   return (
     <div className="space-y-6 bg-[#E1E5E8]">
@@ -100,21 +130,69 @@ const Dashboard = () => {
               </tr>
             </thead>
             <tbody>
-              {TASKS.map((t, idx) => (
-                <tr key={t.id} className={`border-t ${idx === 0 ? "border-t-slate-300" : "border-slate-300"}`}>
-                  <td className="pl-5 pr-2 py-3 flex items-center gap-2">
-                    <input type="checkbox" className="accent-slate-700" />
-                    <span className="text-slate-800">{t.title}</span>
-                  </td>
-                  <td className="px-2 py-3">
-                    <PriorityBadge level={t.priority} />
-                  </td>
-                  <td className="px-2 py-3 text-slate-700">{t.deadline}</td>
-                  <td className="px-5 py-3 text-right">
-                    <button className="text-slate-600 hover:text-slate-900 font-medium">Xem</button>
+              {loading && (
+                <tr>
+                  <td colSpan={4} className="px-5 py-6 text-center text-slate-500">
+                    Đang tải dữ liệu task…
                   </td>
                 </tr>
-              ))}
+              )}
+
+              {!loading && error && (
+                <tr>
+                  <td colSpan={4} className="px-5 py-6 text-center text-rose-500">
+                    Không thể tải danh sách task. Vui lòng thử lại sau.
+                  </td>
+                </tr>
+              )}
+
+              {!loading && !error && !hasData && (
+                <tr>
+                  <td colSpan={4} className="px-5 py-6 text-center text-slate-500">
+                    Chưa có task nào.
+                  </td>
+                </tr>
+              )}
+
+              {!loading &&
+                !error &&
+                hasData &&
+                list.map((t, idx) => (
+                  <tr
+                    key={t.id}
+                    className={`border-t ${idx === 0 ? "border-t-slate-300" : "border-slate-300"}`}
+                  >
+                    <td className="pl-5 pr-2 py-3 flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        className="accent-slate-700"
+                        checked={t.status === "done"}
+                        readOnly
+                      />
+                      <span
+                        className={`text-slate-800 ${
+                          t.status === "done" ? "line-through text-slate-400" : ""
+                        }`}
+                      >
+                        {t.title}
+                      </span>
+                    </td>
+                    <td className="px-2 py-3">
+                      <PriorityBadge level={t.priority} />
+                    </td>
+                    <td className="px-2 py-3 text-slate-700">
+                      {t.deadline ? formatDate(t.deadline) : "—"}
+                    </td>
+                    <td className="px-5 py-3 text-right">
+                      <button
+                        className="text-slate-600 hover:text-slate-900 font-medium"
+                        onClick={() => navigate(`/tasks/detail/${t.id}`)}
+                      >
+                        Xem
+                      </button>
+                    </td>
+                  </tr>
+                ))}
             </tbody>
           </table>
         </div>
@@ -128,7 +206,7 @@ const Dashboard = () => {
           <div className="grid grid-cols-2 gap-3">
             <div className="rounded-xl border border-slate-200 p-4">
               <p className="text-slate-500 text-sm">Tổng số Task</p>
-              <p className="text-2xl font-semibold mt-1">{done+inProgress+overdue}</p>
+              <p className="text-2xl font-semibold mt-1">{list.length}</p>
             </div>
             <div className="rounded-xl border border-slate-200 p-4">
               <p className="text-slate-500 text-sm">Đã hoàn thành</p>
