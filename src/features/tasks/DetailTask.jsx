@@ -3,6 +3,7 @@ import { useNavigate, useParams } from "react-router-dom"
 import { toast } from "sonner"
 import useTask from "@/hooks/useTask"
 import { formatDate } from "@/utils/date"
+import ConfirmDialog from "@/components/ui/ConfirmDialog"
 
 const PriorityBadge = ({ value }) => {
   const map = {
@@ -18,13 +19,22 @@ const PriorityBadge = ({ value }) => {
 }
 
 const StatusBadge = ({ value }) => {
-  const label = value === "in_progress" ? "Đang làm" : value === "done" ? "Hoàn thành" : "Chưa làm"
+  const label =
+    value === "in_progress"
+      ? "Đang làm"
+      : value === "done"
+      ? "Hoàn thành"
+      : "Chưa làm"
   const map = {
     todo: "bg-slate-200 text-slate-800",
     in_progress: "bg-yellow-300 text-yellow-900",
     done: "bg-green-200 text-green-800",
   }
-  return <span className={`inline-block rounded px-2 py-0.5 text-sm ${map[value]}`}>{label}</span>
+  return (
+    <span className={`inline-block rounded px-2 py-0.5 text-sm ${map[value]}`}>
+      {label}
+    </span>
+  )
 }
 
 const Row = ({ label, children }) => (
@@ -38,32 +48,41 @@ const DetailTask = () => {
   const { id } = useParams()
   const navigate = useNavigate()
   const { items, fetchTasks, deleteTask, loading } = useTask()
+
   const [task, setTask] = useState(null)
   const [busy, setBusy] = useState(false)
+  const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false)
 
+  // Tìm task trong store trước, nếu chưa có thì mới fetch
   useEffect(() => {
     let mounted = true
+    if (!id) return
+
+    const local = (items || []).find((it) => String(it.id) === String(id))
+    if (local && mounted) {
+      setTask(local)
+      return
+    }
+
     const load = async () => {
-      if (!id) return
-
-      // Tìm trong state local trước
-      const local = (items || []).find((it) => String(it.id) === String(id))
-      if (local && mounted) {
-        setTask(local)
-        return
-      }
-
       try {
-        await fetchTasks?.()
-        const after = (items || []).find((it) => String(it.id) === String(id))
-        if (after && mounted) setTask(after)
-        else if (mounted) toast.error("Không tìm thấy task.")
+        const res = await fetchTasks?.()
+        const list = res?.data || res || []
+        const after =
+          list.find?.((it) => String(it.id) === String(id)) ||
+          (items || []).find((it) => String(it.id) === String(id))
+
+        if (!mounted) return
+
+        if (after) setTask(after)
+        else toast.error("Không tìm thấy task.")
       } catch (err) {
         if (mounted) toast.error(err?.message || "Không thể tải task")
       }
     }
 
     load()
+
     return () => {
       mounted = false
     }
@@ -71,8 +90,14 @@ const DetailTask = () => {
 
   const handleEdit = () => navigate(`/tasks/edit/${id}`)
 
-  const handleDelete = async () => {
-    if (!confirm("Bạn có chắc muốn xóa task này?")) return
+  // Nút xóa -> mở dialog confirm
+  const handleDeleteClick = () => {
+    setConfirmDeleteOpen(true)
+  }
+
+  // Xóa thực
+  const handleConfirmDelete = async () => {
+    setConfirmDeleteOpen(false)
     setBusy(true)
     try {
       const action = await deleteTask(id)
@@ -106,7 +131,10 @@ const DetailTask = () => {
         <div className="max-w-md w-full rounded-2xl border border-slate-100 bg-white p-6 shadow-sm text-center">
           Không tìm thấy task.
           <div className="mt-4">
-            <button onClick={() => navigate("/tasks")} className="rounded-lg border px-4 py-2">
+            <button
+              onClick={() => navigate("/tasks")}
+              className="rounded-lg border px-4 py-2"
+            >
               Quay về danh sách
             </button>
           </div>
@@ -140,11 +168,15 @@ const DetailTask = () => {
           </Row>
 
           <Row label="Deadline:">
-            <div className="font-semibold">{formatDate(task.deadline)}</div>
+            <div className="font-semibold">
+              {task.deadline ? formatDate(task.deadline) : "—"}
+            </div>
           </Row>
 
           <Row label="Ngày tạo:">
-            <div className="font-semibold">{formatDate(task.created_at)}</div>
+            <div className="font-semibold">
+              {task.created_at ? formatDate(task.created_at) : "—"}
+            </div>
           </Row>
 
           <Row label="Checklist:">
@@ -152,7 +184,10 @@ const DetailTask = () => {
               {Array.isArray(task.checklist) && task.checklist.length > 0 ? (
                 <ul className="list-disc ml-5 space-y-1 text-slate-700">
                   {task.checklist.map((c, idx) => (
-                    <li key={idx} className={c.done ? "line-through text-slate-500" : ""}>
+                    <li
+                      key={idx}
+                      className={c.done ? "line-through text-slate-500" : ""}
+                    >
                       {c.text}
                     </li>
                   ))}
@@ -165,7 +200,12 @@ const DetailTask = () => {
 
           {task.attachment_url && (
             <Row label="File đính kèm:">
-              <a className="text-indigo-600 underline" href={task.attachment_url} target="_blank" rel="noreferrer">
+              <a
+                className="text-indigo-600 underline"
+                href={task.attachment_url}
+                target="_blank"
+                rel="noreferrer"
+              >
                 Mở tệp
               </a>
             </Row>
@@ -183,9 +223,9 @@ const DetailTask = () => {
           </button>
 
           <button
-            onClick={handleDelete}
+            onClick={handleDeleteClick}
             disabled={busy}
-            className="min-w-[100px] rounded-lg border border-rose-500 text-rose-600 px-6 py-3 hover:bg-rose-50"
+            className="min-w-[100px] rounded-lg border border-rose-500 text-rose-600 px-6 py-3 hover:bg-rose-50 disabled:opacity-50"
           >
             {busy ? "Đang xoá…" : "Xoá"}
           </button>
@@ -198,6 +238,17 @@ const DetailTask = () => {
           </button>
         </div>
       </div>
+
+      {/* Confirm delete dialog */}
+      <ConfirmDialog
+        open={confirmDeleteOpen}
+        title="Xóa task"
+        message="Bạn có chắc muốn xóa task này? Hành động này không thể hoàn tác."
+        confirmText="Xóa"
+        cancelText="Hủy"
+        onCancel={() => setConfirmDeleteOpen(false)}
+        onConfirm={handleConfirmDelete}
+      />
     </div>
   )
 }
