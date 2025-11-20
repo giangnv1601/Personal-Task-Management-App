@@ -92,7 +92,11 @@ function CreateTask({ defaultValues, onCancel, onSuccess }) {
               placeholder="Nhập tiêu đề…"
               disabled={creating}
             />
-            {errors.title && <p className="text-xs text-rose-600">{errors.title.message}</p>}
+            {errors.title && (
+              <p role="alert" aria-live="polite" className="text-xs text-rose-600">
+                {errors.title.message}
+              </p>
+            )}
           </div>
 
           {/* Description */}
@@ -136,7 +140,9 @@ function CreateTask({ defaultValues, onCancel, onSuccess }) {
               />
             </div>
             {errors.deadline && (
-              <p className="text-xs text-rose-600">{errors.deadline.message}</p>
+              <p role="alert" aria-live="polite" className="text-xs text-rose-600">
+                {errors.deadline.message}
+              </p>
             )}
 
             <div className="flex items-center gap-2 mt-1">
@@ -183,7 +189,7 @@ function CreateTask({ defaultValues, onCancel, onSuccess }) {
                     disabled={creating}
                   />
                   {errors?.checklist?.[i]?.text && (
-                    <p className="text-xs text-rose-600 mt-1">
+                    <p role="alert" aria-live="polite" className="text-xs text-rose-600 mt-1">
                       {errors.checklist[i].text.message}
                     </p>
                   )}
@@ -222,7 +228,9 @@ function CreateTask({ defaultValues, onCancel, onSuccess }) {
               disabled={creating}
             />
             {errors.attachment_url && (
-              <p className="text-xs text-rose-600">{errors.attachment_url.message}</p>
+              <p role="alert" aria-live="polite" className="text-xs text-rose-600">
+                {errors.attachment_url.message}
+              </p>
             )}
           </div>
 

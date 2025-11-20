@@ -195,7 +195,11 @@ export default function UpdateTask() {
               <option value="in_progress">Đang làm</option>
               <option value="done">Đã hoàn thành</option>
             </select>
-            {errors.status && <p className="text-sm text-red-600 mt-1">{errors.status.message}</p>}
+            {errors.status && (
+              <p role="alert" aria-live="polite" className="text-sm text-red-600 mt-1">
+                {errors.status.message}
+              </p>
+            )}
           </div>
 
           {/* Title */}
@@ -207,7 +211,11 @@ export default function UpdateTask() {
               disabled={busy}
               {...register("title", { required: "Tên task là bắt buộc" })}
             />
-            {errors.title && <p className="text-sm text-red-600 mt-1">{errors.title.message}</p>}
+            {errors.title && (
+              <p role="alert" aria-live="polite" className="text-sm text-red-600 mt-1">
+                {errors.title.message}
+              </p>
+            )}
           </div>
 
           {/* Description */}
@@ -242,7 +250,9 @@ export default function UpdateTask() {
                     disabled={busy}
                   />
                   {fieldState.error && (
-                    <p className="text-sm text-red-600 mt-1">{fieldState.error.message}</p>
+                    <p role="alert" aria-live="polite" className="text-sm text-red-600 mt-1">
+                      {fieldState.error.message}
+                    </p>
                   )}
                 </>
               )}
@@ -262,7 +272,9 @@ export default function UpdateTask() {
               <option value="high">High</option>
             </select>
             {errors.priority && (
-              <p className="text-sm text-red-600 mt-1">{errors.priority.message}</p>
+              <p role="alert" aria-live="polite" className="text-sm text-red-600 mt-1">
+                {errors.priority.message}
+              </p>
             )}
           </div>
 
@@ -321,7 +333,9 @@ export default function UpdateTask() {
               })}
             />
             {errors.attachment_url && (
-              <p className="text-sm text-red-600 mt-1">{errors.attachment_url.message}</p>
+              <p role="alert" aria-live="polite" className="text-sm text-red-600 mt-1">
+                {errors.attachment_url.message}
+              </p>
             )}
           </div>
 

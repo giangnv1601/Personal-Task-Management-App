@@ -121,9 +121,11 @@ const Dashboard = () => {
           <h2 className="text-lg font-semibold text-slate-800">Danh sách Task</h2>
           <Link
             to="/tasks/new"
+            aria-label="Thêm Task"
+            title="Thêm Task"
             className="inline-flex items-center gap-1 bg-[#5E7280] text-white rounded-xl px-3 py-2 hover:bg-slate-700 transition"
           >
-            <Plus className="w-5 h-5" />
+            <Plus className="w-5 h-5" aria-hidden="true" focusable="false" />
             Thêm Task
           </Link>
         </div>
@@ -143,7 +145,9 @@ const Dashboard = () => {
               {loading && (
                 <tr>
                   <td colSpan={4} className="px-5 py-6 text-center text-slate-500">
-                    Đang tải dữ liệu task…
+                    <div role="status" aria-live="polite">
+                      Đang tải dữ liệu task…
+                    </div>
                   </td>
                 </tr>
               )}
@@ -151,7 +155,9 @@ const Dashboard = () => {
               {!loading && error && (
                 <tr>
                   <td colSpan={4} className="px-5 py-6 text-center text-rose-500">
-                    Không thể tải danh sách task. Vui lòng thử lại sau.
+                    <div role="alert" aria-live="polite">
+                      Không thể tải danh sách task. Vui lòng thử lại sau.
+                    </div>
                   </td>
                 </tr>
               )}
@@ -159,7 +165,7 @@ const Dashboard = () => {
               {!loading && !error && !hasData && (
                 <tr>
                   <td colSpan={4} className="px-5 py-6 text-center text-slate-500">
-                    Chưa có task nào.
+                    <div role="status" aria-live="polite">Chưa có task nào.</div>
                   </td>
                 </tr>
               )}
@@ -197,6 +203,8 @@ const Dashboard = () => {
                       <button
                         className="text-slate-600 hover:text-slate-900 font-medium"
                         onClick={() => navigate(`/tasks/detail/${t.id}`)}
+                        aria-label={`Xem chi tiết task ${t.title}`}
+                        title={`Xem ${t.title}`}
                       >
                         Xem
                       </button>

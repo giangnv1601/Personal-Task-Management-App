@@ -224,10 +224,11 @@ const TasksPage = () => {
             {deadlineFilter && (
               <button
                 onClick={() => setDeadlineFilter("")}
+                aria-label="Xóa lọc deadline"
                 className="rounded-lg border border-gray-300 px-2 py-2 text-sm text-gray-700 hover:bg-gray-50"
                 title="Xóa lọc deadline"
               >
-                <X size={14} />
+                <X size={14} aria-hidden="true" focusable="false" />
               </button>
             )}
           </div>
@@ -235,11 +236,16 @@ const TasksPage = () => {
 
         {/* Error state UI */}
         {!loading && error && (
-          <div className="mb-3 flex items-center justify-between rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+          <div
+            role="alert"
+            aria-live="polite"
+            className="mb-3 flex items-center justify-between rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700"
+          >
             <span>Đã xảy ra lỗi khi tải danh sách task.</span>
             <button
               type="button"
               onClick={handleRetry}
+              aria-label="Thử lại tải danh sách task"
               className="rounded-md border border-red-300 px-2 py-1 text-xs font-medium hover:bg-red-100"
             >
               Thử lại
@@ -249,7 +255,7 @@ const TasksPage = () => {
 
         {/* Loading state */}
         {loading && (
-          <div className="py-8 text-center text-gray-500">
+          <div role="status" aria-live="polite" className="py-8 text-center text-gray-500">
             Đang tải tasks...
           </div>
         )}
@@ -319,7 +325,7 @@ const TasksPage = () => {
             })}
 
             {pageItems.length === 0 && !error && (
-              <div className="py-8 text-center text-gray-500">
+              <div role="status" aria-live="polite" className="py-8 text-center text-gray-500">
                 Không có task phù hợp.
               </div>
             )}
