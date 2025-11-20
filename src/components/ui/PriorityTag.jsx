@@ -1,4 +1,5 @@
 import React from "react"
+import PropTypes from "prop-types"
 import { CircleAlert, AlertTriangle, CheckCircle } from "lucide-react"
 
 const SIZE_STYLES = {
@@ -41,8 +42,8 @@ const ICONS = {
  */
 export default function PriorityTag({
   priority,
-  size = "md",
-  variant = "soft",
+  size = "md", // sm | md | lg
+  variant = "subtle", // subtle | solid | outline
   showIcon = true,
   className = "",
 }) {
@@ -52,16 +53,32 @@ export default function PriorityTag({
     return <span className="text-gray-500">—</span>
   }
 
-  const sizeCls = SIZE_STYLES[size] || SIZE_STYLES.md
-  const variantCls = VARIANT_STYLES[variant]?.[value] || VARIANT_STYLES.soft[value]
-  const icon = ICONS[value]
+  const sz = SIZE_STYLES[size] || SIZE_STYLES.md
+  const sty = VARIANT_STYLES[variant]?.[value] || VARIANT_STYLES.soft[value]
+  const label = value[0].toUpperCase() + value.slice(1)
 
   return (
     <span
-      className={`inline-flex items-center gap-1 rounded-full font-medium ${sizeCls} ${variantCls} ${className}`}
+      className={`inline-flex items-center gap-2 rounded-full font-medium ${sz} ${sty} ${className}`}
+      aria-label={label === "—" ? "Không có ưu tiên" : `Ưu tiên: ${label}`}
     >
-      {showIcon && icon}
-      {value[0].toUpperCase() + value.slice(1)}
+      {showIcon && (ICONS[value] || null)}
+      <span>{label}</span>
     </span>
   )
+}
+
+PriorityTag.propTypes = {
+  priority: PropTypes.string,
+  size: PropTypes.oneOf(["sm", "md", "lg"]),
+  variant: PropTypes.oneOf(["subtle", "solid", "outline"]),
+  showIcon: PropTypes.bool,
+  className: PropTypes.string,
+}
+PriorityTag.defaultProps = {
+  priority: "",
+  size: "md",
+  variant: "subtle",
+  showIcon: true,
+  className: "",
 }

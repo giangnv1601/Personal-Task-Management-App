@@ -1,4 +1,5 @@
 import React from "react"
+import PropTypes from "prop-types"
 import { STATUS_LABEL } from "@/constants/task"
 
 const MAP = {
@@ -16,4 +17,11 @@ export default function StatusBadge({ value }) {
       {label}
     </span>
   )
+}
+
+StatusBadge.propTypes = {
+  value: PropTypes.string,
+}
+StatusBadge.defaultProps = {
+  value: "todo",
 }

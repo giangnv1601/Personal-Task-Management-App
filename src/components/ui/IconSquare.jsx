@@ -1,4 +1,5 @@
-import React from 'react'
+import React from "react"
+import PropTypes from "prop-types"
 
 const IconSquare = ({ size = 48 }) => {
   return (
@@ -15,3 +16,10 @@ const IconSquare = ({ size = 48 }) => {
 }
 
 export default IconSquare
+
+IconSquare.propTypes = {
+  size: PropTypes.number,
+}
+IconSquare.defaultProps = {
+  size: 48,
+}
