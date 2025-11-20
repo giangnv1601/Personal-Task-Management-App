@@ -6,9 +6,12 @@ import { useNavigate } from "react-router-dom"
 import useTask from "@/hooks/useTask"
 import { toLocalInput, toUTCISOString } from "@/utils/date"
 import { isValidUrl, validateDeadline, validateText } from "@/utils/validate"
-
-const PRIORITIES = ["low", "medium", "high"]
-const STATUSES = ["todo", "in_progress", "done"]
+import {
+  PRIORITIES,
+  STATUSES,
+  PRIORITY_LABEL,
+  STATUS_LABEL,
+} from "@/constants/task"
 
 function CreateTask({ defaultValues, onCancel, onSuccess }) {
   const { createTask, creating } = useTask()
@@ -126,7 +129,7 @@ function CreateTask({ defaultValues, onCancel, onSuccess }) {
               >
                 {PRIORITIES.map((p) => (
                   <option key={p} value={p}>
-                    {p[0].toUpperCase() + p.slice(1)}
+                    {PRIORITY_LABEL[p] ?? (p[0].toUpperCase() + p.slice(1))}
                   </option>
                 ))}
               </select>
@@ -179,7 +182,7 @@ function CreateTask({ defaultValues, onCancel, onSuccess }) {
             >
               {STATUSES.map((s) => (
                 <option key={s} value={s}>
-                  {s === "in_progress" ? "In progress" : s[0].toUpperCase() + s.slice(1)}
+                  {STATUS_LABEL[s] ?? (s[0].toUpperCase() + s.slice(1))}
                 </option>
               ))}
             </select>
