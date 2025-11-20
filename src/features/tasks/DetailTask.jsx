@@ -216,6 +216,7 @@ const DetailTask = () => {
         <div className="border-t border-slate-300 pt-3 flex items-center justify-center gap-3">
           <button
             onClick={handleEdit}
+            aria-label="Sửa task"
             disabled={busy}
             className="min-w-[100px] rounded-lg bg-indigo-600 px-6 py-3 text-white hover:bg-indigo-500 disabled:opacity-50"
           >
@@ -224,6 +225,7 @@ const DetailTask = () => {
 
           <button
             onClick={handleDeleteClick}
+            aria-label="Xoá task"
             disabled={busy}
             className="min-w-[100px] rounded-lg border border-rose-500 text-rose-600 px-6 py-3 hover:bg-rose-50 disabled:opacity-50"
           >
@@ -232,6 +234,7 @@ const DetailTask = () => {
 
           <button
             onClick={handleClose}
+            aria-label="Đóng chi tiết task"
             className="min-w-[100px] rounded-lg border border-slate-300 px-6 py-3 bg-white text-slate-700 hover:bg-slate-50"
           >
             Đóng
