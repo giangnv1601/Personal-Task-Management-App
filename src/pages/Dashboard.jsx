@@ -5,6 +5,7 @@ import { Link, useNavigate } from "react-router-dom"
 import { formatDate } from "@/utils/date"
 import IconSquare from "@/components/ui/IconSquare"
 import useTask from "@/hooks/useTask"
+import useAuth from "@/hooks/useAuth"
 
 function PriorityBadge({ level }) {
   const map = {
@@ -52,10 +53,17 @@ function DonutChart({
 const Dashboard = () => {
   const navigate = useNavigate()
   const { items, loading, error, fetchTasks } = useTask()
+  const { user, isAuthenticated, fetchProfile } = useAuth()
 
   useEffect(() => {
     fetchTasks?.()
   }, [fetchTasks])
+
+  useEffect(() => {
+    if (isAuthenticated && (!user || !user.full_name)) {
+      fetchProfile()
+    }
+  }, [isAuthenticated, user, fetchProfile])
 
   const list = items || []
 
@@ -95,10 +103,12 @@ const Dashboard = () => {
 
         {/* User */}
         <div className="flex items-center gap-3">
-          <p className="text-slate-700">Nguyễn Văn A</p>
+          <p className="text-slate-700">
+            {user?.full_name || user?.email || "—"}
+          </p>
           <img
-            src="https://t4.ftcdn.net/jpg/07/03/86/11/360_F_703861114_7YxIPnoH8NfmbyEffOziaXy0EO1NpRHD.jpg"
-            alt="Avatar"
+            src={user?.avatarUrl || user?.avatar || "https://t4.ftcdn.net/jpg/07/03/86/11/360_F_703861114_7YxIPnoH8NfmbyEffOziaXy0EO1NpRHD.jpg"}
+            alt={user?.full_name || user?.email || "Avatar"}
             className="w-10 h-10 rounded-full bg-slate-200"
           />
         </div>
