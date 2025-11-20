@@ -1,6 +1,6 @@
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit'
 
-import { loginUser, logoutUser, signupUser } from '@/api/userApi.js'
+import { loginUser, logoutUser, signupUser, getUserProfile } from '@/api/userApi.js'
 
 // Khối lưu phiên
 const KS = { 
@@ -43,7 +43,6 @@ const loadInitial = () => {
   try {
     user = usrStr ? JSON.parse(usrStr) : null
   } catch {
-    // Bỏ qua lỗi JSON hỏng trong storage
     user = null
   }
 
@@ -90,10 +89,22 @@ export const registerThunk = createAsyncThunk(
   }
 )
 
+// Thunk lấy thông tin User
+export const fetchUserProfileThunk = createAsyncThunk(
+  'auth/fetchProfile',
+  async (userId, { getState, rejectWithValue }) => {
+    const state = getState()
+    const id = userId || state?.auth?.user?.id
+    if (!id) return rejectWithValue('Không có userId để lấy profile')
+    const res = await getUserProfile(id)
+    if (!res.ok) return rejectWithValue(res.error || 'Không lấy được user')
+    return res.data
+  }
+)
 
 // Nạp state ban đầu từ loadInitial()
 const init = loadInitial()
-
+ 
 const authSlice = createSlice({
   name: 'auth',
   initialState: {
@@ -183,9 +194,26 @@ const authSlice = createSlice({
         state.loading = false
         state.error = action.payload || 'Đăng ký thất bại'
       })
+      // Get User Profile
+      .addCase(fetchUserProfileThunk.pending, (state) => { state.loading = true; state.error = null })
+      .addCase(fetchUserProfileThunk.fulfilled, (state, action) => {
+        state.loading = false
+        state.user = action.payload ?? state.user
+        // persist updated user to storage if authenticated
+        persistSession({
+          remember: state.remember,
+          access_token: state.access_token,
+          refresh_token: state.refresh_token,
+          user: state.user,
+        })
+      })
+      .addCase(fetchUserProfileThunk.rejected, (state, action) => {
+        state.loading = false
+        state.error = action.payload || 'Không thể tải profile'
+      })
   },
 })
-
+ 
 export const { hydrateFromStorage } = authSlice.actions
 
 // Selectors
