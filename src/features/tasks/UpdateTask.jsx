@@ -77,10 +77,14 @@ export default function UpdateTask() {
         if (after && mounted) {
           reset({ ...init, ...after })
         } else {
-          toast.error("Không tìm thấy task.")
+          if (mounted && !isDeleting) {
+            toast.error("Không tìm thấy task.")
+          }
         }
       } catch (err) {
-        toast.error(err?.message || "Không thể tải task")
+        if (mounted && !isDeleting) {
+          toast.error(err?.message || "Không thể tải task")
+        }
       }
     }
 
