@@ -1,6 +1,6 @@
 /* eslint-disable no-undef */
 import React from "react"
-import { render, screen, fireEvent, waitFor } from "@testing-library/react"
+import { render, screen, fireEvent, waitFor, within } from "@testing-library/react"
 import { MemoryRouter } from "react-router-dom"
 
 // --- Mocks ---
@@ -26,9 +26,28 @@ jest.mock("@/hooks/useTask", () => ({
   default: jest.fn(),
 }))
 
+// mock utils/date mới: formatDateTime + formatRelativeTime
 jest.mock("@/utils/date", () => ({
   __esModule: true,
-  formatDate: (iso) => (iso ? `FMT(${iso})` : "—"),
+  formatDateTime: (iso) => (iso ? `FMT(${iso})` : "—"),
+  formatRelativeTime: (iso) => (iso ? `REL(${iso})` : ""),
+}))
+
+// mock ConfirmDialog thành dialog đơn giản để dễ click nút trong test
+jest.mock("@/components/ui/ConfirmDialog", () => ({
+  __esModule: true,
+  default: ({ open, title, message, confirmText, cancelText, onConfirm, onCancel }) => {
+    if (!open) return null
+    return (
+      <div role="dialog" aria-label={title}>
+        <p>{message}</p>
+        <button onClick={onCancel}>{cancelText}</button>
+        <button onClick={onConfirm} aria-label={confirmText}>
+          {confirmText}
+        </button>
+      </div>
+    )
+  },
 }))
 
 import { toast } from "sonner"
@@ -60,6 +79,22 @@ const renderUI = () =>
       <DetailTask />
     </MemoryRouter>
   )
+
+// helper to find a button by aria-label or text (accent-insensitive by checking simplified forms)
+const findButtonLike = (candidates) => {
+  const btns = screen.getAllByRole("button")
+  const normalize = (s = "") =>
+    s
+      .toString()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toLowerCase()
+  return btns.find((b) => {
+    const attr = b.getAttribute("aria-label")
+    const hay = normalize(attr || b.textContent)
+    return candidates.some((c) => hay.includes(normalize(c)))
+  })
+}
 
 describe("DetailTask Page", () => {
   const mockNavigate = jest.fn()
@@ -104,7 +139,9 @@ describe("DetailTask Page", () => {
       expect(toast.error).toHaveBeenCalledWith("Không tìm thấy task.")
     })
     expect(screen.getByText("Không tìm thấy task.")).toBeInTheDocument()
-    expect(screen.getByRole("button", { name: /Quay về danh sách/i })).toBeInTheDocument()
+    expect(
+      screen.getByRole("button", { name: /Quay về danh sách/i })
+    ).toBeInTheDocument()
   })
 
   test("Render chi tiết task đúng dữ liệu", () => {
@@ -114,13 +151,13 @@ describe("DetailTask Page", () => {
     expect(screen.getByText(baseTask.title)).toBeInTheDocument()
     expect(screen.getByText(baseTask.description)).toBeInTheDocument()
 
-    // Trạng thái
+    // Trạng thái (StatusBadge)
     expect(screen.getByText("Đang làm")).toBeInTheDocument()
 
-    // Ưu tiên
+    // Ưu tiên (PriorityBadge)
     expect(screen.getByText("High")).toBeInTheDocument()
 
-    // Date
+    // Deadline + Ngày tạo dùng formatDateTime mock = FMT(...)
     expect(screen.getByText(`FMT(${baseTask.deadline})`)).toBeInTheDocument()
     expect(screen.getByText(`FMT(${baseTask.created_at})`)).toBeInTheDocument()
 
@@ -133,26 +170,38 @@ describe("DetailTask Page", () => {
     expect(link).toHaveAttribute("href", baseTask.attachment_url)
   })
 
-  test("Nút 'Sửa' điều hướng đúng route", () => {
+  test("Nút 'Sửa' điều hướng đúng route edit", () => {
     renderUI()
-    fireEvent.click(screen.getByRole("button", { name: "Sửa" }))
+    const editBtn = findButtonLike(["Sửa task", "Sua task", "Sửa"])
+    expect(editBtn).toBeDefined()
+    fireEvent.click(editBtn)
     expect(mockNavigate).toHaveBeenCalledWith(`/tasks/edit/${baseTask.id}`)
   })
 
-  test("Xoá: user bấm Cancel trong confirm → không gọi deleteTask", () => {
-    const confirmSpy = jest.spyOn(window, "confirm").mockReturnValueOnce(false)
+  test("Xoá: bấm Hủy trong ConfirmDialog → không gọi deleteTask", async () => {
     renderUI()
-    fireEvent.click(screen.getByRole("button", { name: "Xoá" }))
 
-    expect(confirmSpy).toHaveBeenCalled()
+    const deleteBtn = findButtonLike(["Xoá task", "Xoa task", "Xoa", "Xóa"])
+    expect(deleteBtn).toBeDefined()
+    fireEvent.click(deleteBtn)
+
+    // ConfirmDialog mở
+    const dialog = await screen.findByRole("dialog")
+    const cancelBtn = within(dialog).getAllByRole("button").find((b) =>
+      /huy|hủy|huy/i.test(
+        (b.getAttribute("aria-label") || b.textContent || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+      )
+    )
+    expect(cancelBtn).toBeDefined()
+    fireEvent.click(cancelBtn)
+
     expect(mockDeleteTask).not.toHaveBeenCalled()
-
-    confirmSpy.mockRestore()
+    await waitFor(() => {
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument()
+    })
   })
 
   test("Xoá: thành công → toast.success và điều hướng /tasks", async () => {
-    jest.spyOn(window, "confirm").mockReturnValueOnce(true)
-
     const deleteMock = jest.fn().mockResolvedValueOnce({
       meta: { requestStatus: "fulfilled" },
     })
@@ -165,17 +214,25 @@ describe("DetailTask Page", () => {
     })
 
     renderUI()
-    fireEvent.click(screen.getByRole("button", { name: "Xoá" }))
+
+    const deleteBtn = findButtonLike(["Xoá task", "Xoa task", "Xoa", "Xóa"])
+    fireEvent.click(deleteBtn)
+
+    const dialog = await screen.findByRole("dialog")
+    const confirmBtn = within(dialog).getAllByRole("button").find((b) =>
+      /(xoa|xóa|xo)/i.test((b.getAttribute("aria-label") || b.textContent || ""))
+    )
+    expect(confirmBtn).toBeDefined()
+    fireEvent.click(confirmBtn)
 
     await waitFor(() => {
+      expect(deleteMock).toHaveBeenCalledWith(baseTask.id)
       expect(toast.success).toHaveBeenCalledWith("Xóa task thành công")
       expect(mockNavigate).toHaveBeenCalledWith("/tasks")
     })
   })
 
-  test("Xoá: thất bại → toast.error", async () => {
-    jest.spyOn(window, "confirm").mockReturnValueOnce(true)
-
+  test("Xoá: thất bại → toast.error với message từ action.payload", async () => {
     const deleteMock = jest.fn().mockResolvedValueOnce({
       meta: { requestStatus: "rejected" },
       payload: "Xóa thất bại",
@@ -189,20 +246,31 @@ describe("DetailTask Page", () => {
     })
 
     renderUI()
-    fireEvent.click(screen.getByRole("button", { name: "Xoá" }))
+
+    const deleteBtn = findButtonLike(["Xoá task", "Xoa task", "Xoa", "Xóa"])
+    fireEvent.click(deleteBtn)
+
+    const dialog = await screen.findByRole("dialog")
+    const confirmBtn = within(dialog).getAllByRole("button").find((b) =>
+      /(xoa|xóa|xo)/i.test((b.getAttribute("aria-label") || b.textContent || ""))
+    )
+    fireEvent.click(confirmBtn)
 
     await waitFor(() => {
+      expect(deleteMock).toHaveBeenCalledWith(baseTask.id)
       expect(toast.error).toHaveBeenCalledWith("Xóa thất bại")
     })
   })
 
   test("Nút 'Đóng' quay lại trang trước", () => {
     renderUI()
-    fireEvent.click(screen.getByRole("button", { name: "Đóng" }))
+    const closeBtn = findButtonLike(["Đóng chi tiết task", "Dong chi tiet", "Đóng"])
+    expect(closeBtn).toBeDefined()
+    fireEvent.click(closeBtn)
     expect(mockNavigate).toHaveBeenCalledWith(-1)
   })
 
-  test("loading=true nhưng đã có task → vẫn render chi tiết, không render Loading", () => {
+  test("loading=true nhưng đã có task → cuối cùng hiển thị chi tiết, không hiển thị Loading", async () => {
     useTask.mockReturnValue({
       items: [baseTask],
       fetchTasks: mockFetchTasks,
@@ -212,11 +280,12 @@ describe("DetailTask Page", () => {
 
     renderUI()
 
-    // Không hiển thị 'Đang tải...'
-    expect(screen.queryByText("Đang tải...")).not.toBeInTheDocument()
-    // Vẫn hiển thị chi tiết task
-    expect(screen.getByText("Chi tiết Task")).toBeInTheDocument()
-    expect(screen.getByText(baseTask.title)).toBeInTheDocument()
+    // ban đầu có thể có "Đang tải...", nhưng sau khi useEffect setTask thì phải là màn chi tiết
+    await waitFor(() => {
+      expect(screen.queryByText("Đang tải...")).not.toBeInTheDocument()
+      expect(screen.getByText("Chi tiết Task")).toBeInTheDocument()
+      expect(screen.getByText(baseTask.title)).toBeInTheDocument()
+    })
   })
 
   test("Checklist rỗng và không có file đính kèm → hiển thị '—' và không có link Mở tệp", () => {
@@ -237,11 +306,12 @@ describe("DetailTask Page", () => {
 
     // Checklist hiển thị '—'
     expect(screen.getByText("Checklist:")).toBeInTheDocument()
-    // có 2 dấu '—' (Mô tả có thể không, nên dùng regex/location nếu cần), ở đây check tồn tại là đủ
     expect(screen.getAllByText("—").length).toBeGreaterThan(0)
 
     // Không có link 'Mở tệp'
-    expect(screen.queryByRole("link", { name: /Mở tệp/i })).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole("link", { name: /Mở tệp/i })
+    ).not.toBeInTheDocument()
   })
 
   test("StatusBadge hiển thị đúng nhãn cho todo và done", () => {
@@ -296,6 +366,7 @@ describe("DetailTask Page", () => {
     )
     const mediumEl = screen.getByText("Medium")
     expect(mediumEl).toBeInTheDocument()
+    // vẫn check className nếu PriorityBadge giữ mapping cũ
     expect(mediumEl.className).toMatch(/bg-orange-500/)
     unmount()
 
@@ -316,7 +387,7 @@ describe("DetailTask Page", () => {
     expect(lowEl.className).toMatch(/bg-slate-400/)
   })
 
-  test("fetchTasks ném lỗi → hiển thị toast lỗi 'Không thể tải task'", async () => {
+  test("fetchTasks ném lỗi → hiển thị toast lỗi với message từ Error", async () => {
     const error = new Error("Network error")
 
     useTask.mockReturnValue({
