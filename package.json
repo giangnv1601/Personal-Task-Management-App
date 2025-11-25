@@ -11,7 +11,7 @@
     "preview": "vite preview",
     "test": "jest --passWithNoTests",
     "test:watch": "jest --watch --passWithNoTests",
-    "test:coverage": "jest --coverage --passWithNoTests",
+    "test:cov": "jest --coverage --passWithNoTests",
     "test:ci": "jest --coverage --runInBand"
   },
   "dependencies": {

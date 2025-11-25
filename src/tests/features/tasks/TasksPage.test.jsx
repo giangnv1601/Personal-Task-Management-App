@@ -39,22 +39,34 @@ jest.mock("@/hooks/usePagination", () => ({
 // Mock useTask
 const mockFetchTasks = jest.fn()
 const mockUpdateTask = jest.fn()
+const mockOptimisticToggleStatus = jest.fn()
 let mockItems = []
 let mockLoading = false
 let mockUpdating = false
 let mockError = null
 
-jest.mock("@/hooks/useTask", () => ({
-  __esModule: true,
-  default: () => ({
-    items: mockItems,
-    loading: mockLoading,
-    updating: mockUpdating,
-    error: mockError,
-    fetchTasks: mockFetchTasks,
-    updateTask: mockUpdateTask,
-  }),
-}))
+jest.mock("@/hooks/useTask", () => {
+  return {
+    __esModule: true,
+    default: () => ({
+      get items() {
+        return mockItems
+      },
+      get loading() {
+        return mockLoading
+      },
+      get updating() {
+        return mockUpdating
+      },
+      get error() {
+        return mockError
+      },
+      fetchTasks: mockFetchTasks,
+      updateTask: mockUpdateTask,
+      optimisticToggleStatus: mockOptimisticToggleStatus,
+    }),
+  }
+})
 
 // Mock utils/date
 jest.mock("@/utils/date", () => ({
@@ -98,7 +110,7 @@ describe("TasksPage", () => {
     mockUpdateTask.mockResolvedValue({ meta: { requestStatus: "fulfilled" } })
   })
 
-  test("hiển thị danh sách task", async () => {
+  test("Hiển thị danh sách task mặc định", async () => {
     render(
       <MemoryRouter>
         <TasksPage />
@@ -108,7 +120,7 @@ describe("TasksPage", () => {
     expect(await screen.findByText("Task B")).toBeInTheDocument()
   })
 
-  test("lọc theo tiêu đề", async () => {
+  test("Lọc task theo tiêu đề", async () => {
     render(
       <MemoryRouter>
         <TasksPage />
@@ -124,7 +136,7 @@ describe("TasksPage", () => {
     })
   })
 
-  test("toggle checkbox sẽ gọi updateTask", async () => {
+  test("Click checkbox trạng thái sẽ gọi updateTask", async () => {
     render(
       <MemoryRouter>
         <TasksPage />
@@ -138,7 +150,7 @@ describe("TasksPage", () => {
     expect(mockUpdateTask).toHaveBeenCalledWith("1", expect.objectContaining({ status: "done" }))
   })
 
-  test("hiển thị trạng thái rỗng nếu không có task", async () => {
+  test("Hiển thị trạng thái rỗng khi không có task", async () => {
     mockItems = []
     render(
       <MemoryRouter>
@@ -148,7 +160,7 @@ describe("TasksPage", () => {
     expect(await screen.findByText("Không có task phù hợp.")).toBeInTheDocument()
   })
 
-  test("lọc theo priority", async () => {
+  test("Lọc task theo độ ưu tiên (priority)", async () => {
     render(
       <MemoryRouter>
         <TasksPage />
@@ -166,7 +178,7 @@ describe("TasksPage", () => {
     })
   })
 
-  test("lọc theo status", async () => {
+  test("Lọc task theo trạng thái (status)", async () => {
     render(
       <MemoryRouter>
         <TasksPage />
@@ -184,7 +196,7 @@ describe("TasksPage", () => {
     })
   })
 
-  test("lọc theo deadline", async () => {
+  test("Lọc task theo deadline (≤ ngày được chọn)", async () => {
     render(
       <MemoryRouter>
         <TasksPage />
@@ -202,7 +214,7 @@ describe("TasksPage", () => {
     })
   })
 
-  test("xóa deadline filter khi bấm nút X", async () => {
+  test("Xoá bộ lọc deadline khi bấm nút X", async () => {
     render(
       <MemoryRouter>
         <TasksPage />
@@ -228,7 +240,7 @@ describe("TasksPage", () => {
     })
   })
 
-  test("kết hợp nhiều filters cùng lúc", async () => {
+  test("Kết hợp nhiều bộ lọc (priority + status) cùng lúc", async () => {
     render(
       <MemoryRouter>
         <TasksPage />
@@ -249,7 +261,7 @@ describe("TasksPage", () => {
     })
   })
 
-  test("hiển thị loading state", async () => {
+  test("Hiển thị trạng thái loading khi đang tải tasks", async () => {
     mockItems = []
     mockLoading = true
 
@@ -262,7 +274,7 @@ describe("TasksPage", () => {
     expect(await screen.findByText("Đang tải tasks...")).toBeInTheDocument()
   })
 
-  test("hiển thị error toast khi có lỗi", async () => {
+  test("Hiển thị toast lỗi khi hook trả về error", async () => {
     mockItems = []
     mockError = "Lỗi kết nối mạng"
 
@@ -277,7 +289,7 @@ describe("TasksPage", () => {
     })
   })
 
-  test("hiển thị toast success khi toggle task thành công", async () => {
+  test("Hiển thị toast success khi cập nhật trạng thái task thành công", async () => {
     mockUpdateTask.mockResolvedValueOnce({
       meta: { requestStatus: "fulfilled" },
     })
@@ -296,7 +308,7 @@ describe("TasksPage", () => {
     })
   })
 
-  test("hiển thị link tạo mới task", async () => {
+  test("Hiển thị link điều hướng tới trang tạo mới task", async () => {
     render(
       <MemoryRouter>
         <TasksPage />
@@ -308,7 +320,7 @@ describe("TasksPage", () => {
     expect(createLink).toHaveAttribute("href", "/tasks/new")
   })
 
-  test("debounce search input", async () => {
+  test("Debounce ô tìm kiếm tiêu đề hoạt động đúng", async () => {
     jest.useFakeTimers()
 
     render(
