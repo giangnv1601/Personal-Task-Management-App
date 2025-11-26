@@ -10,6 +10,7 @@ import {
 import React, { useMemo, useState, useCallback, useEffect } from "react"
 import { Link } from "react-router-dom"
 import { toast } from "sonner"
+import { List } from "react-window"
 
 import PriorityTag from "@/components/ui/PriorityTag"
 import useAuth from "@/hooks/useAuth"
@@ -17,7 +18,77 @@ import usePagination from "@/hooks/usePagination"
 import useTask from "@/hooks/useTask"
 import { formatDateTime, isDeadlineBeforeOrEqual } from "@/utils/date"
 
-const PAGE_SIZE = 10
+// Số item mỗi trang
+const PAGE_SIZE = 20
+// Chiều cao mỗi row trong react-window
+const ROW_HEIGHT = 56 
+// Số row tối đa hiển thị trong react-window trước khi scroll
+const MAX_VISIBLE_ROWS = 10
+
+// Row cho react-window
+function TaskRow({ index, style, tasks, updating, togglingId, toggleDone }) {
+  const t = tasks[index]
+  if (!t) return null
+
+  const isToggling = updating && togglingId === t.id
+
+  return (
+    <div
+      style={style}
+      className="flex items-center justify-between border-b border-gray-200 px-3 py-3 transition-colors hover:bg-gray-50"
+    >
+      <div className="flex w-1/2 items-center gap-3">
+        <input
+          type="checkbox"
+          className="size-4 cursor-pointer"
+          checked={!!t.done}
+          onChange={() => toggleDone(t.id)}
+          disabled={!!isToggling}
+          aria-label={`Hoàn thành task: ${t.title}`}
+        />
+        {isToggling && (
+          <Loader2 className="size-4 animate-spin text-gray-400" />
+        )}
+        <span
+          className={`text-gray-900 ${
+            t.done ? "line-through text-gray-500" : ""
+          }`}
+        >
+          {t.title}
+        </span>
+      </div>
+
+      <div className="w-[140px] text-center">
+        <PriorityTag priority={t.priority} showIcon={false} />
+      </div>
+
+      <div className="w-[180px] text-center font-mono text-sm text-gray-700">
+        {t.deadline ? (
+          formatDateTime(t.deadline)
+        ) : (
+          <span className="text-gray-400">—</span>
+        )}
+      </div>
+
+      <div className="flex w-[180px] justify-center gap-2">
+        <Link
+          to={`/tasks/detail/${t.id}`}
+          aria-label={`Xem chi tiết task ${t.title}`}
+          className="rounded-lg border border-gray-300 px-3 py-1 text-sm text-blue-600 hover:bg-blue-50 transition-colors"
+        >
+          Xem
+        </Link>
+        <Link
+          to={`/tasks/edit/${t.id}`}
+          aria-label={`Sửa task ${t.title}`}
+          className="rounded-lg border border-gray-300 px-3 py-1 text-sm text-blue-600 hover:bg-blue-50 transition-colors disabled:opacity-50"
+        >
+          Sửa
+        </Link>
+      </div>
+    </div>
+  )
+}
 
 const TasksPage = () => {
   // Hooks
@@ -98,15 +169,14 @@ const TasksPage = () => {
     [tasks, updateTask, optimisticToggleStatus]
   )
 
-  // Memo hoá filter function để tránh tạo lại logic filter mỗi lần render
+  // Memo hoá filter function
   const taskFilter = useMemo(() => {
     const term = debouncedQ.toLowerCase()
     const pf = priorityFilter.toLowerCase()
     const sf = statusFilter.toLowerCase()
     const df = deadlineFilter
 
-    const isNoFilter =
-      !term && pf === "all" && sf === "all" && !df
+    const isNoFilter = !term && pf === "all" && sf === "all" && !df
 
     if (isNoFilter) {
       return (t) => true
@@ -270,7 +340,11 @@ const TasksPage = () => {
 
         {/* Loading state */}
         {loading && (
-          <div role="status" aria-live="polite" className="py-8 text-center text-gray-500">
+          <div
+            role="status"
+            aria-live="polite"
+            className="py-8 text-center text-gray-500"
+          >
             Đang tải tasks...
           </div>
         )}
@@ -278,71 +352,36 @@ const TasksPage = () => {
         {/* Rows */}
         {!loading && (
           <div>
-            {pageItems.map((t) => {
-              const isToggling = updating && togglingId === t.id
-
-              return (
-                <div
-                  key={t.id}
-                  className="flex items-center justify-between border-b border-gray-200 px-3 py-3 transition-colors hover:bg-gray-50"
-                >
-                  <div className="flex w-1/2 items-center gap-3">
-                    <input
-                      type="checkbox"
-                      className="size-4 cursor-pointer"
-                      checked={!!t.done}
-                      onChange={() => toggleDone(t.id)}
-                      disabled={!!isToggling}
-                      aria-label={`Hoàn thành task: ${t.title}`}
-                    />
-                    {isToggling && (
-                      <Loader2 className="size-4 animate-spin text-gray-400" />
-                    )}
-                    <span
-                      className={`text-gray-900 ${
-                        t.done ? "line-through text-gray-500" : ""
-                      }`}
-                    >
-                      {t.title}
-                    </span>
-                  </div>
-
-                  <div className="w-[140px] text-center">
-                    <PriorityTag priority={t.priority} showIcon={false} />
-                  </div>
-
-                  <div className="w-[180px] text-center font-mono text-sm text-gray-700">
-                    {t.deadline ? (
-                      formatDateTime(t.deadline)
-                    ) : (
-                      <span className="text-gray-400">—</span>
-                    )}
-                  </div>
-
-                  <div className="flex w-[180px] justify-center gap-2">
-                    <Link
-                      to={`/tasks/detail/${t.id}`}
-                      aria-label={`Xem chi tiết task ${t.title}`}
-                      className="rounded-lg border border-gray-300 px-3 py-1 text-sm text-blue-600 hover:bg-blue-50 transition-colors"
-                    >
-                      Xem
-                    </Link>
-                    <Link
-                      to={`/tasks/edit/${t.id}`}
-                      aria-label={`Sửa task ${t.title}`}
-                      className="rounded-lg border border-gray-300 px-3 py-1 text-sm text-blue-600 hover:bg-blue-50 transition-colors disabled:opacity-50"
-                    >
-                      Sửa
-                    </Link>
-                  </div>
-                </div>
-              )
-            })}
-
+            {/* Empty state */}
             {pageItems.length === 0 && !error && (
-              <div role="status" aria-live="polite" className="py-8 text-center text-gray-500">
+              <div
+                role="status"
+                aria-live="polite"
+                className="py-8 text-center text-gray-500"
+              >
                 Không có task phù hợp.
               </div>
+            )}
+
+            {/* Dùng react-window tối ưu hiệu năng */}
+            {pageItems.length > 0 && (
+              <List
+                rowComponent={TaskRow}
+                rowCount={pageItems.length}
+                rowHeight={ROW_HEIGHT}
+                rowProps={{
+                  tasks: pageItems,
+                  updating,
+                  togglingId,
+                  toggleDone,
+                }}
+                style={{
+                  width: "100%",
+                  height:
+                    Math.min(pageItems.length, MAX_VISIBLE_ROWS) *
+                    ROW_HEIGHT,
+                }}
+              />
             )}
           </div>
         )}
