@@ -1,3 +1,5 @@
+import "./MainLayout.css"
+
 import { LayoutDashboard, CircleChevronDown, User, LogOut } from "lucide-react"
 import { NavLink, Outlet, useNavigate } from "react-router-dom"
 import { toast } from "sonner"
@@ -5,12 +7,10 @@ import { toast } from "sonner"
 import IconSquare from "@/components/ui/IconSquare"
 import useAuth from "@/hooks/useAuth.js"
 
-
 const MainLayout = () => {
   const navigate = useNavigate()
   const { logout, loading } = useAuth()
 
-  // Hàm đăng xuất
   const handleLogout = async () => {
     try {
       const res = await logout()
@@ -27,24 +27,20 @@ const MainLayout = () => {
   }
 
   return (
-    <div className="flex min-h-screen bg-[#E1E5E8]">
+    <div className="main-layout">
       {/* Sidebar */}
-      <aside className="w-64 bg-[#2f3b45] text-gray-200 flex flex-col rounded-r-2xl">
+      <aside className="main-layout__sidebar">
         {/* Logo */}
-        <div className="px-5 py-5 flex">
+        <div className="main-layout__logo">
           <IconSquare />
         </div>
 
         {/* NavBar */}
-        <nav className="px-2 flex flex-col gap-2">
+        <nav className="main-layout__nav">
           <NavLink
             to="/dashboard"
             className={({ isActive }) =>
-              `flex items-center gap-3 px-3 py-2 rounded-lg transition-colors text-lg ${
-                isActive
-                  ? "bg-[#5E7280] text-white"
-                  : "text-gray-300 hover:bg-gray-700 hover:text-white"
-              }`
+              `nav-item ${isActive ? "nav-item--active" : "nav-item--inactive"}`
             }
           >
             <LayoutDashboard size={22} /> Dashboard
@@ -53,11 +49,7 @@ const MainLayout = () => {
           <NavLink
             to="/tasks"
             className={({ isActive }) =>
-              `flex items-center gap-3 px-3 py-2 rounded-lg transition-colors text-lg ${
-                isActive
-                  ? "bg-[#5E7280] text-white"
-                  : "text-gray-300 hover:bg-gray-700 hover:text-white"
-              }`
+              `nav-item ${isActive ? "nav-item--active" : "nav-item--inactive"}`
             }
           >
             <CircleChevronDown size={22} /> Danh sách Task
@@ -66,11 +58,7 @@ const MainLayout = () => {
           <NavLink
             to="/profile"
             className={({ isActive }) =>
-              `flex items-center gap-3 px-3 py-2 rounded-lg transition-colors text-lg ${
-                isActive
-                  ? "bg-[#5E7280] text-white"
-                  : "text-gray-300 hover:bg-gray-700 hover:text-white"
-              }`
+              `nav-item ${isActive ? "nav-item--active" : "nav-item--inactive"}`
             }
           >
             <User size={22} /> Hồ sơ cá nhân
@@ -79,7 +67,7 @@ const MainLayout = () => {
           <button
             onClick={handleLogout}
             disabled={loading}
-            className="text-left flex items-center gap-3 px-3 py-2 rounded-lg transition-colors text-lg text-gray-300 hover:bg-gray-700 hover:text-white disabled:opacity-60"
+            className="nav-item nav-item--inactive logout-btn"
           >
             <LogOut size={22} /> {loading ? "Đang thoát..." : "Đăng xuất"}
           </button>
@@ -87,7 +75,7 @@ const MainLayout = () => {
       </aside>
 
       {/* Nội dung trang */}
-      <main className="flex-1 px-5 py-2 bg-[#E1E5E8]">
+      <main className="main-layout__content">
         <Outlet />
       </main>
     </div>

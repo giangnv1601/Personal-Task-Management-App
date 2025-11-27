@@ -2,9 +2,10 @@ import React, { Suspense, lazy } from "react"
 import { Routes, Route, Navigate } from "react-router-dom"
 import { Toaster } from "sonner"
 
-import MainLayout from "@/components/layouts/MainLayout.jsx"
 import ProtectedLayout from "@/components/layouts/ProtectedLayout.jsx"
 import PublicOnlyLayout from "@/components/layouts/PublicOnlyLayout.jsx"
+
+const MainLayout = lazy(() => import("@/components/layouts/MainLayout.jsx"))
 
 const LoginPage = lazy(() => import("@/features/auth/LoginPage.jsx"))
 const RegisterPage = lazy(() => import("@/features/auth/RegisterPage.jsx"))
