@@ -3,14 +3,50 @@ import path from 'path'
 import tailwindcss from '@tailwindcss/vite'
 import react from '@vitejs/plugin-react-swc'
 import { defineConfig } from 'vite'
+import { visualizer } from 'rollup-plugin-visualizer'
+
+const isReport = process.env.npm_lifecycle_event === 'build:report'
 
 // https://vite.dev/config/
 export default defineConfig({
-  plugins: [react(), tailwindcss()],
+  plugins: [
+    react(),
+    tailwindcss(),
+    // chỉ bật visualizer khi chạy script build:report
+    isReport &&
+      visualizer({
+        filename: 'dist/bundle-report.html',
+        template: 'treemap',
+        gzipSize: true,
+        brotliSize: true,
+        open: true,
+      }),
+  ].filter(Boolean),
+
   resolve: {
     alias: {
       // eslint-disable-next-line no-undef
       '@': path.resolve(__dirname, './src'),
+    },
+  },
+
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          // Nhóm core React
+          react: ['react', 'react-dom'],
+
+          // Router
+          router: ['react-router-dom'],
+
+          // State management
+          redux: ['@reduxjs/toolkit', 'react-redux'],
+
+          // UI
+          ui: ['lucide-react', 'sonner'],
+        },
+      },
     },
   },
 })
