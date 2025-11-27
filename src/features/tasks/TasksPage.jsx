@@ -7,7 +7,7 @@ import {
   ChevronRight,
   Loader2,
 } from "lucide-react"
-import React, { useMemo, useState, useCallback, useEffect } from "react"
+import React, { useMemo, useState, useCallback, useEffect, useRef } from "react"
 import { Link } from "react-router-dom"
 import { toast } from "sonner"
 import { List } from "react-window"
@@ -111,6 +111,9 @@ const TasksPage = () => {
   const [deadlineFilter, setDeadlineFilter] = useState("")
   const [togglingId, setTogglingId] = useState(null)
 
+  // Lưu timeout cho từng taskId
+  const toggleTimersRef = useRef({})
+
   // Debounce search
   useEffect(() => {
     const id = setTimeout(() => setDebouncedQ(q.trim()), 300)
@@ -139,32 +142,46 @@ const TasksPage = () => {
 
   // Toggle checkbox với optimistic update
   const toggleDone = useCallback(
-    async (id) => {
+    (id) => {
       const task = tasks.find((t) => t.id === id)
       if (!task) return
 
+      // Trạng thái mới sau khi toggle
       const nextStatus = task.done ? "todo" : "done"
 
+      // cập nhập UI ngay lập tức
       optimisticToggleStatus(id)
-      setTogglingId(id)
 
-      try {
-        const action = await updateTask(id, {
-          status: nextStatus,
-          updated_at: new Date().toISOString(),
-        })
-
-        if (action?.meta?.requestStatus === "fulfilled") {
-          toast.success("Cập nhật trạng thái task thành công!")
-        } else {
-          toast.error("Cập nhật trạng thái task thất bại.")
-        }
-      } catch (err) {
-        console.error(err)
-        toast.error("Có lỗi xảy ra khi cập nhật trạng thái task.")
-      } finally {
-        setTogglingId(null)
+      // clear timer cũ nếu user toggle nhanh
+      const existingTimer = toggleTimersRef.current[id]
+      if (existingTimer) {
+        clearTimeout(existingTimer)
       }
+
+      // Thiết lập timer mới để gọi API sau 250ms
+      toggleTimersRef.current[id] = setTimeout(async () => {
+        setTogglingId(id)
+
+        try {
+          const action = await updateTask(id, {
+            status: nextStatus,
+            updated_at: new Date().toISOString(),
+          })
+
+          if (action?.meta?.requestStatus === "fulfilled") {
+            toast.success("Cập nhật trạng thái task thành công!")
+          } else {
+            toast.error("Cập nhật trạng thái task thất bại.")
+          }
+        } catch (err) {
+          console.error(err)
+          toast.error("Có lỗi xảy ra khi cập nhật trạng thái task.")
+        } finally {
+          setTogglingId(null)
+          // clear timer sau khi đã gọi xong
+          delete toggleTimersRef.current[id]
+        }
+      }, 250)
     },
     [tasks, updateTask, optimisticToggleStatus]
   )
