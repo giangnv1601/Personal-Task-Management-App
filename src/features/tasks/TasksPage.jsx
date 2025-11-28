@@ -7,7 +7,7 @@ import {
   ChevronRight,
   Loader2,
 } from "lucide-react"
-import React, { useMemo, useState, useCallback, useEffect, useRef } from "react"
+import React, { useState, useCallback, useEffect, useRef } from "react"
 import { Link } from "react-router-dom"
 import { toast } from "sonner"
 import { List } from "react-window"
@@ -15,13 +15,13 @@ import { List } from "react-window"
 import PriorityTag from "@/components/ui/PriorityTag"
 import useAuth from "@/hooks/useAuth"
 import usePagination from "@/hooks/usePagination"
-import useTask from "@/hooks/useTask"
-import { formatDateTime, isDeadlineBeforeOrEqual } from "@/utils/date"
+import useFilteredTasks from "@/hooks/useFilteredTasks"
+import { formatDateTime } from "@/utils/date"
 
 // Số item mỗi trang
 const PAGE_SIZE = 20
 // Chiều cao mỗi row trong react-window
-const ROW_HEIGHT = 56 
+const ROW_HEIGHT = 56
 // Số row tối đa hiển thị trong react-window trước khi scroll
 const MAX_VISIBLE_ROWS = 10
 
@@ -51,7 +51,7 @@ function TaskRow({ index, style, tasks, updating, togglingId, toggleDone }) {
         )}
         <span
           className={`text-gray-900 ${
-            t.done ? "line-through text-gray-500" : ""
+            t.done ? 'line-through text-gray-500' : ''
           }`}
         >
           {t.title}
@@ -91,27 +91,17 @@ function TaskRow({ index, style, tasks, updating, togglingId, toggleDone }) {
 }
 
 const TasksPage = () => {
-  // Hooks
   const { user } = useAuth()
-  const {
-    items,
-    loading,
-    updating,
-    error,
-    fetchTasks,
-    updateTask,
-    optimisticToggleStatus,
-  } = useTask()
 
-  // State
-  const [q, setQ] = useState("")
-  const [debouncedQ, setDebouncedQ] = useState("")
-  const [priorityFilter, setPriorityFilter] = useState("all")
-  const [statusFilter, setStatusFilter] = useState("all")
-  const [deadlineFilter, setDeadlineFilter] = useState("")
+  // State filter / search
+  const [q, setQ] = useState('')
+  const [debouncedQ, setDebouncedQ] = useState('')
+  const [priorityFilter, setPriorityFilter] = useState('all')
+  const [statusFilter, setStatusFilter] = useState('all')
+  const [deadlineFilter, setDeadlineFilter] = useState('')
   const [togglingId, setTogglingId] = useState(null)
 
-  // Lưu timeout cho từng taskId
+  // Lưu timeout cho từng taskId (debounce gửi API)
   const toggleTimersRef = useRef({})
 
   // Debounce search
@@ -120,6 +110,25 @@ const TasksPage = () => {
     return () => clearTimeout(id)
   }, [q])
 
+  // Lấy tasks đã lọc
+  const {
+    itemsFiltered,
+    items,
+    loading,
+    updating,
+    error,
+    fetchTasks,
+    updateTask,
+    optimisticToggleStatus,
+    isFiltering,
+    isMutating,
+  } = useFilteredTasks({
+    searchText: debouncedQ,
+    priorityFilter,
+    statusFilter,
+    deadlineFilter,
+  })
+
   // Fetch tasks
   useEffect(() => {
     if (user?.id) {
@@ -127,29 +136,22 @@ const TasksPage = () => {
     }
   }, [user?.id, fetchTasks])
 
-  // Hiển thị error toast (ngoài UI error state)
+  // Hiển thị error toast
   useEffect(() => {
     if (error) {
       toast.error(error)
     }
   }, [error])
 
-  // Map tasks từ API: thêm property "done" từ status
-  const tasks = useMemo(
-    () => (items || []).map((t) => ({ ...t, done: t.status === "done" })),
-    [items]
-  )
-
-  // Toggle checkbox với optimistic update
+  // Toggle checkbox với optimistic update + debounce API
   const toggleDone = useCallback(
     (id) => {
-      const task = tasks.find((t) => t.id === id)
+      const task = itemsFiltered.find((t) => t.id === id)
       if (!task) return
 
-      // Trạng thái mới sau khi toggle
-      const nextStatus = task.done ? "todo" : "done"
+      const nextStatus = task.done ? 'todo' : 'done'
 
-      // cập nhập UI ngay lập tức
+      // cập nhật UI ngay
       optimisticToggleStatus(id)
 
       // clear timer cũ nếu user toggle nhanh
@@ -158,71 +160,33 @@ const TasksPage = () => {
         clearTimeout(existingTimer)
       }
 
-      // Thiết lập timer mới để gọi API sau 250ms
+      // timer mới
       toggleTimersRef.current[id] = setTimeout(async () => {
         setTogglingId(id)
-
         try {
           const action = await updateTask(id, {
             status: nextStatus,
             updated_at: new Date().toISOString(),
           })
 
-          if (action?.meta?.requestStatus === "fulfilled") {
-            toast.success("Cập nhật trạng thái task thành công!")
+          if (action?.meta?.requestStatus === 'fulfilled') {
+            toast.success('Cập nhật trạng thái task thành công!')
           } else {
-            toast.error("Cập nhật trạng thái task thất bại.")
+            toast.error('Cập nhật trạng thái task thất bại.')
           }
         } catch (err) {
           console.error(err)
-          toast.error("Có lỗi xảy ra khi cập nhật trạng thái task.")
+          toast.error('Có lỗi xảy ra khi cập nhật trạng thái task.')
         } finally {
           setTogglingId(null)
-          // clear timer sau khi đã gọi xong
           delete toggleTimersRef.current[id]
         }
       }, 250)
     },
-    [tasks, updateTask, optimisticToggleStatus]
+    [itemsFiltered, updateTask, optimisticToggleStatus]
   )
 
-  // Memo hoá filter function
-  const taskFilter = useMemo(() => {
-    const term = debouncedQ.toLowerCase()
-    const pf = priorityFilter.toLowerCase()
-    const sf = statusFilter.toLowerCase()
-    const df = deadlineFilter
-
-    const isNoFilter = !term && pf === "all" && sf === "all" && !df
-
-    if (isNoFilter) {
-      return (t) => true
-    }
-
-    return (t) => {
-      const title = (t.title || "").toLowerCase()
-      const priority = String(t.priority || "").toLowerCase()
-      const status = String(t.status || "").toLowerCase()
-
-      const matchesQ = !term || title.includes(term)
-      const matchesPriority = pf === "all" || priority === pf
-      const matchesStatus = sf === "all" || status === sf
-      const matchesDeadline =
-        !df || (t.deadline && isDeadlineBeforeOrEqual(t.deadline, df))
-
-      return (
-        matchesQ && matchesPriority && matchesStatus && matchesDeadline
-      )
-    }
-  }, [debouncedQ, priorityFilter, statusFilter, deadlineFilter])
-
-  // Filter tasks
-  const filteredTasks = useMemo(
-    () => tasks.filter(taskFilter),
-    [tasks, taskFilter]
-  )
-
-  // Pagination
+  // Pagination chạy trên items đã lọc
   const {
     page,
     setPage,
@@ -232,7 +196,7 @@ const TasksPage = () => {
     goPrev,
     goNext,
     goTo,
-  } = usePagination(filteredTasks, PAGE_SIZE)
+  } = usePagination(itemsFiltered, PAGE_SIZE)
 
   // Reset về trang 1 khi đổi bộ lọc/tìm kiếm
   useEffect(() => {
@@ -260,7 +224,6 @@ const TasksPage = () => {
         </Link>
       </div>
 
-      {/* --- Task List Card --- */}
       <div className="rounded-xl border border-gray-300 bg-white p-4 shadow-sm">
         {/* Toolbar */}
         <div className="mb-4 flex flex-wrap gap-3 pb-2">
@@ -325,7 +288,7 @@ const TasksPage = () => {
             />
             {deadlineFilter && (
               <button
-                onClick={() => setDeadlineFilter("")}
+                onClick={() => setDeadlineFilter('')}
                 aria-label="Xóa lọc deadline"
                 className="rounded-lg border border-gray-300 px-2 py-2 text-sm text-gray-700 hover:bg-gray-50"
                 title="Xóa lọc deadline"
@@ -335,6 +298,15 @@ const TasksPage = () => {
             )}
           </div>
         </div>
+
+        {/* Thông tin đang lọc/sort hoặc mutation */}
+        {(isFiltering || isMutating) && !loading && (
+          <p className="mb-2 text-xs text-gray-500">
+            {isFiltering
+              ? 'Đang áp dụng bộ lọc / sắp xếp...'
+              : 'Đang cập nhật dữ liệu task...'}
+          </p>
+        )}
 
         {/* Error state UI */}
         {!loading && error && (
@@ -376,7 +348,9 @@ const TasksPage = () => {
                 aria-live="polite"
                 className="py-8 text-center text-gray-500"
               >
-                Không có task phù hợp.
+                {(items?.length ?? 0) > 0
+                  ? 'Không có task phù hợp với bộ lọc hiện tại.'
+                  : 'Chưa có task nào, hãy tạo task mới.'}
               </div>
             )}
 
@@ -393,10 +367,9 @@ const TasksPage = () => {
                   toggleDone,
                 }}
                 style={{
-                  width: "100%",
+                  width: '100%',
                   height:
-                    Math.min(pageItems.length, MAX_VISIBLE_ROWS) *
-                    ROW_HEIGHT,
+                    Math.min(pageItems.length, MAX_VISIBLE_ROWS) * ROW_HEIGHT,
                 }}
               />
             )}
@@ -415,7 +388,7 @@ const TasksPage = () => {
             </button>
 
             {pageRange.map((p, idx) =>
-              p === "…" ? (
+              p === '…' ? (
                 <span
                   key={`gap-${idx}`}
                   className="px-2 text-gray-400"
@@ -429,8 +402,8 @@ const TasksPage = () => {
                   onClick={() => goTo(p)}
                   className={`rounded-lg px-3 py-1 text-sm transition-colors ${
                     p === page
-                      ? "bg-gray-900 text-white"
-                      : "border border-transparent text-gray-700 hover:bg-gray-100"
+                      ? 'bg-gray-900 text-white'
+                      : 'border border-transparent text-gray-700 hover:bg-gray-100'
                   }`}
                 >
                   {p}

@@ -6,7 +6,7 @@ import {
   updateTaskThunk,
   deleteTaskThunk,
   clearTasksError,
-  optimisticToggleStatus
+  optimisticToggleStatus,
 } from '@/features/tasks/TasksSlice.js'
 
 export default function useTask() {
@@ -19,9 +19,13 @@ export default function useTask() {
     deleting,
     error,
     errorType,
-    errorStatus
+    errorStatus,
   } = useSelector((s) => s.tasks)
 
+  // Tổng trạng thái mutation
+  const isMutating = creating || updating || deleting
+
+  // Actions
   const actions = useMemo(
     () => ({
       fetchTasks: (params) => dispatch(fetchTasksThunk(params)),
@@ -30,20 +34,29 @@ export default function useTask() {
         dispatch(updateTaskThunk({ taskId, updates })),
       deleteTask: (taskId) => dispatch(deleteTaskThunk(taskId)),
       clearError: () => dispatch(clearTasksError()),
-      optimisticToggleStatus: (taskId) => dispatch(optimisticToggleStatus(taskId)),
+      optimisticToggleStatus: (taskId) =>
+        dispatch(optimisticToggleStatus(taskId)),
     }),
     [dispatch]
   )
 
   return {
+    // data
     items,
+
+    // status
     loading,
     creating,
     updating,
     deleting,
+    isMutating,
+
+    // thông tin lỗi
     error,
     errorType,
     errorStatus,
+
+    // actions
     ...actions,
   }
 }
