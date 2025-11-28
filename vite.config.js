@@ -34,17 +34,9 @@ export default defineConfig({
     rollupOptions: {
       output: {
         manualChunks: {
-          // Nhóm core React
-          react: ['react', 'react-dom'],
-
-          // Router
-          router: ['react-router-dom'],
-
-          // State management
+          react: ['react', 'react-dom', 'react-router-dom'],
           redux: ['@reduxjs/toolkit', 'react-redux'],
-
-          // UI
-          ui: ['lucide-react', 'sonner'],
+          icons: ['lucide-react'],
         },
       },
     },
