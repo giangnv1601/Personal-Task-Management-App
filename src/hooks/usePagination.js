@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react"
+import { useCallback, useMemo, useState } from "react"
 
 /**
  * usePagination
@@ -7,64 +7,97 @@ import { useCallback, useEffect, useMemo, useState } from "react"
  * @param {number} pageSize - Số items mỗi trang
  * @param {number} windowSize - Số trang hiển thị hai bên trang hiện tại
  * @param {"default" | "full" | "minimal"} rangeStyle - Kiểu hiển thị page range
- *
- * @returns {{
- *   page: number,
- *   setPage: Function,
- *   total: number,
- *   totalPages: number,
- *   startIdx: number,
- *   endIdx: number,
- *   pageItems: Array,
- *   pageRange: Array<number | "…">,
- *   goPrev: Function,
- *   goNext: Function,
- *   goTo: Function
+ * @param {boolean} hasMoreFromServer - Còn dữ liệu phía server chưa load hết (cursor hasMore)
+ * 
+ * @return {{
+ *  page: number,
+ *  setPage: function,
+ *  total: number,
+ *  totalPages: number,
+ *  startIdx: number,
+ *  endIdx: number,
+ *  pageItems: Array,
+ *  pageRange: Array,
+ *  goPrev: function,
+ *  goNext: function,
+ *  goTo: function,
  * }}
  */
 export default function usePagination(
   list,
   pageSize = 10,
   windowSize = 1,
-  rangeStyle = "default"
+  rangeStyle = "default",
+  hasMoreFromServer = false,
 ) {
   const [page, setPage] = useState(1)
 
   // Tính toán dữ liệu phân trang
   const { total, totalPages, startIdx, endIdx, pageItems } = useMemo(() => {
     const total = Array.isArray(list) ? list.length : 0
-    const totalPages = Math.max(1, Math.ceil(total / pageSize))
+    const baseTotalPages = Math.max(1, Math.ceil(total / pageSize))
+
+    // Nếu hasMoreFromServer = true → cộng thêm 1 page ảo
+    const totalPages = hasMoreFromServer ? baseTotalPages + 1 : baseTotalPages
+
     const startIdx = (page - 1) * pageSize
     const endIdx = startIdx + pageSize
     const pageItems = (Array.isArray(list) ? list : []).slice(startIdx, endIdx)
-    return { total, totalPages, startIdx, endIdx, pageItems }
-  }, [list, page, pageSize])
 
-  // Khi data ít lại → giảm trang nếu cần
-  useEffect(() => {
-    if (page > totalPages) setPage(totalPages)
-  }, [totalPages, page])
+    return { total, totalPages, startIdx, endIdx, pageItems }
+  }, [list, page, pageSize, hasMoreFromServer])
 
   // Điều hướng
   const goPrev = useCallback(() => setPage((p) => Math.max(1, p - 1)), [])
   const goNext = useCallback(
     () => setPage((p) => Math.min(totalPages, p + 1)),
-    [totalPages]
+    [totalPages],
   )
   const goTo = useCallback(
     (p) => setPage(() => Math.min(Math.max(1, p), totalPages)),
-    [totalPages]
+    [totalPages],
   )
 
   // Tính toán range số trang
   const pageRange = useMemo(() => {
-    if (rangeStyle === "minimal") return [] // chỉ dùng Prev/Next
+    if (rangeStyle === "minimal") return []
 
+    // Trường hợp còn dữ liệu từ server chưa load hết (default)
+    if (hasMoreFromServer) {
+      const set = new Set()
+
+      // luôn có trang 1
+      set.add(1) 
+
+      if (page - 1 > 1) {
+        set.add(page - 1)
+      }
+
+      if (page !== 1) {
+        set.add(page)
+      }
+
+      // trang kế tiếp để user click
+      set.add(page + 1) 
+
+      const numericPages = Array.from(set)
+        .filter((p) => typeof p === "number" && p >= 1)
+        .sort((a, b) => a - b)
+
+      if (!numericPages.includes(1)) numericPages.unshift(1)
+
+      // Ví dụ:
+      // page=1  -> [1,2,"…"]
+      // page=2  -> [1,2,3,"…"]
+      // page=3  -> [1,2,3,4,"…"]
+      return [...numericPages, "…"]
+    }
+
+    // Trường hợp đã load hết dữ liệu từ server
     if (rangeStyle === "full") {
       return Array.from({ length: totalPages }, (_, i) => i + 1)
     }
 
-    // default style
     const range = []
     if (totalPages <= 1) return [1]
 
@@ -89,7 +122,7 @@ export default function usePagination(
     }
 
     return range
-  }, [page, totalPages, windowSize, rangeStyle])
+  }, [page, totalPages, windowSize, rangeStyle, hasMoreFromServer])
 
   return {
     page,

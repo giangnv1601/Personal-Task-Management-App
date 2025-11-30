@@ -7,7 +7,7 @@ import {
   ChevronRight,
   Loader2,
 } from "lucide-react"
-import React, { useState, useCallback, useEffect, useRef } from "react"
+import React, { useState, useCallback, useEffect, useRef, useMemo } from "react"
 import { Link } from "react-router-dom"
 import { toast } from "sonner"
 import { List } from "react-window"
@@ -15,17 +15,21 @@ import { List } from "react-window"
 import PriorityTag from "@/components/ui/PriorityTag"
 import useAuth from "@/hooks/useAuth"
 import usePagination from "@/hooks/usePagination"
-import useFilteredTasks from "@/hooks/useFilteredTasks"
+import useTask from "@/hooks/useTask"
 import { formatDateTime } from "@/utils/date"
 
 // Số item mỗi trang
-const PAGE_SIZE = 20
+const PAGE_SIZE = 10
 // Chiều cao mỗi row trong react-window
 const ROW_HEIGHT = 56
 // Số row tối đa hiển thị trong react-window trước khi scroll
 const MAX_VISIBLE_ROWS = 10
+// Ngưỡng quyết định chuyển từ pagination sang infinite scroll
+const TASKS_THRESHOLD = 30
+// Limit cho lần fetch đầu tiên
+const INITIAL_LIMIT = PAGE_SIZE
 
-// Row cho react-window
+// Row dùng cho pagination
 function TaskRow({ index, style, tasks, updating, togglingId, toggleDone }) {
   const t = tasks[index]
   if (!t) return null
@@ -51,7 +55,7 @@ function TaskRow({ index, style, tasks, updating, togglingId, toggleDone }) {
         )}
         <span
           className={`text-gray-900 ${
-            t.done ? 'line-through text-gray-500' : ''
+            t.done ? "line-through text-gray-500" : ""
           }`}
         >
           {t.title}
@@ -90,19 +94,64 @@ function TaskRow({ index, style, tasks, updating, togglingId, toggleDone }) {
   )
 }
 
+// Row dùng cho infinite scroll
+function InfiniteRow({
+  index,
+  style,
+  tasks,
+  updating,
+  togglingId,
+  toggleDone,
+  hasMore,
+  loading,
+  onLoadMore,
+}) {
+  const isLoaderRow = hasMore && index === tasks.length
+
+  // Loader row ở cuối list
+  if (isLoaderRow) {
+    if (!loading && typeof onLoadMore === "function") {
+      onLoadMore()
+    }
+
+    return (
+      <div
+        style={style}
+        className="flex items-center justify-center border-b border-gray-200 bg-gray-50 text-xs text-gray-500"
+      >
+        {loading ? "Đang tải thêm task..." : "Đang chờ tải thêm task..."}
+      </div>
+    )
+  }
+
+  // Row task bình thường
+  return (
+    <TaskRow
+      index={index}
+      style={style}
+      tasks={tasks}
+      updating={updating}
+      togglingId={togglingId}
+      toggleDone={toggleDone}
+    />
+  )
+}
+
 const TasksPage = () => {
   const { user } = useAuth()
 
   // State filter / search
-  const [q, setQ] = useState('')
-  const [debouncedQ, setDebouncedQ] = useState('')
-  const [priorityFilter, setPriorityFilter] = useState('all')
-  const [statusFilter, setStatusFilter] = useState('all')
-  const [deadlineFilter, setDeadlineFilter] = useState('')
+  const [q, setQ] = useState("")
+  const [debouncedQ, setDebouncedQ] = useState("")
+  const [priorityFilter, setPriorityFilter] = useState("all")
+  const [statusFilter, setStatusFilter] = useState("all")
+  const [deadlineFilter, setDeadlineFilter] = useState("")
   const [togglingId, setTogglingId] = useState(null)
 
   // Lưu timeout cho từng taskId (debounce gửi API)
   const toggleTimersRef = useRef({})
+  // Throttle cho loadMore (tránh spam API)
+  const loadingMoreRef = useRef(false)
 
   // Debounce search
   useEffect(() => {
@@ -110,31 +159,62 @@ const TasksPage = () => {
     return () => clearTimeout(id)
   }, [q])
 
-  // Lấy tasks đã lọc
   const {
-    itemsFiltered,
     items,
+    itemsFiltered,
     loading,
     updating,
     error,
-    fetchTasks,
+    fetchTasksCursor,
     updateTask,
     optimisticToggleStatus,
     isFiltering,
     isMutating,
-  } = useFilteredTasks({
+    cursor,
+    hasMore,
+  } = useTask({
     searchText: debouncedQ,
     priorityFilter,
     statusFilter,
     deadlineFilter,
   })
 
-  // Fetch tasks
+  const totalLoaded = items?.length ?? 0
+
+  // Xác định mode
+  const mode = useMemo(
+    () => (totalLoaded >= TASKS_THRESHOLD ? "infinite" : "paged"),
+    [totalLoaded],
+  )
+
+  // Hàm load thêm bằng cursor API, có throttle (dùng cho infinite scroll & lazy page)
+  const loadMore = useCallback(() => {
+    if (!user?.id) return
+    if (!hasMore) return
+    if (!cursor) return
+    if (loadingMoreRef.current) return
+
+    loadingMoreRef.current = true
+
+    fetchTasksCursor({
+      userId: user.id,
+      limit: PAGE_SIZE,
+      cursor,
+    }).finally(() => {
+      loadingMoreRef.current = false
+    })
+  }, [user?.id, hasMore, cursor, fetchTasksCursor])
+
+  // Fetch tasks lần đầu: lấy một page đầu tiên
   useEffect(() => {
     if (user?.id) {
-      fetchTasks({ userId: user.id })
+      fetchTasksCursor({
+        userId: user.id,
+        limit: INITIAL_LIMIT,
+        cursor: null,
+      })
     }
-  }, [user?.id, fetchTasks])
+  }, [user?.id, fetchTasksCursor])
 
   // Hiển thị error toast
   useEffect(() => {
@@ -149,7 +229,7 @@ const TasksPage = () => {
       const task = itemsFiltered.find((t) => t.id === id)
       if (!task) return
 
-      const nextStatus = task.done ? 'todo' : 'done'
+      const nextStatus = task.done ? "todo" : "done"
 
       // cập nhật UI ngay
       optimisticToggleStatus(id)
@@ -169,24 +249,24 @@ const TasksPage = () => {
             updated_at: new Date().toISOString(),
           })
 
-          if (action?.meta?.requestStatus === 'fulfilled') {
-            toast.success('Cập nhật trạng thái task thành công!')
+          if (action?.meta?.requestStatus === "fulfilled") {
+            toast.success("Cập nhật trạng thái task thành công!")
           } else {
-            toast.error('Cập nhật trạng thái task thất bại.')
+            toast.error("Cập nhật trạng thái task thất bại.")
           }
         } catch (err) {
           console.error(err)
-          toast.error('Có lỗi xảy ra khi cập nhật trạng thái task.')
+          toast.error("Có lỗi xảy ra khi cập nhật trạng thái task.")
         } finally {
           setTogglingId(null)
           delete toggleTimersRef.current[id]
         }
       }, 250)
     },
-    [itemsFiltered, updateTask, optimisticToggleStatus]
+    [itemsFiltered, updateTask, optimisticToggleStatus],
   )
 
-  // Pagination chạy trên items đã lọc
+  // Pagination chạy trên items đã lọc (chỉ dùng khi mode = paged)
   const {
     page,
     setPage,
@@ -196,18 +276,67 @@ const TasksPage = () => {
     goPrev,
     goNext,
     goTo,
-  } = usePagination(itemsFiltered, PAGE_SIZE)
+    endIdx,
+  } = usePagination(itemsFiltered, PAGE_SIZE, 1, "default", hasMore)
 
   // Reset về trang 1 khi đổi bộ lọc/tìm kiếm
   useEffect(() => {
     setPage(1)
-  }, [debouncedQ, priorityFilter, statusFilter, deadlineFilter, setPage])
+  }, [debouncedQ, priorityFilter, statusFilter, deadlineFilter])
+
+  // Lazy fetch theo trang (dùng cho paged mode)
+  // Nếu chuyển sang trang có endIdx > số items đã load và hasMore = true → loadMore
+  useEffect(() => {
+    if (mode !== "paged") return
+    if (!user?.id) return
+    if (!hasMore) return
+    if (!cursor) return
+    if (loadingMoreRef.current) return
+
+    const loadedCount = items?.length ?? 0
+    if (endIdx > loadedCount) {
+      loadMore()
+    }
+  }, [mode, user?.id, hasMore, cursor, items, endIdx, loadMore])
+
+  // FetchTask cho filter/search (dùng cho paged mode)
+  useEffect(() => {
+    if (mode !== "paged") return
+    if (!user?.id) return
+    if (!hasMore) return // hết data rồi thì dừng
+    if (!cursor) return
+    if (loading || loadingMoreRef.current) return
+
+    const currentPageItems = pageItems.length
+    const isPageIncomplete = currentPageItems >= 0 && currentPageItems < PAGE_SIZE
+
+    // FetchTask nếu trang hiện tại chưa đủ items hiển thị full page
+    if (isPageIncomplete) {
+      loadingMoreRef.current = true
+      fetchTasksCursor({
+        userId: user.id,
+        limit: PAGE_SIZE,
+        cursor,
+      }).finally(() => {
+        loadingMoreRef.current = false
+      })
+    }
+  }, [mode, user?.id, hasMore, cursor, loading, pageItems.length, fetchTasksCursor])
 
   const handleRetry = () => {
     if (user?.id) {
-      fetchTasks({ userId: user.id })
+      fetchTasksCursor({
+        userId: user.id,
+        limit: INITIAL_LIMIT,
+        cursor: null,
+      })
     }
   }
+
+  // Các task trang hiện tại (dùng cho paged mode)
+  const tasksForPagination = pageItems
+  // Các task đã lọc (dùng cho infinite mode)
+  const tasksForInfinite = itemsFiltered
 
   return (
     <div className="p-4">
@@ -288,7 +417,7 @@ const TasksPage = () => {
             />
             {deadlineFilter && (
               <button
-                onClick={() => setDeadlineFilter('')}
+                onClick={() => setDeadlineFilter("")}
                 aria-label="Xóa lọc deadline"
                 className="rounded-lg border border-gray-300 px-2 py-2 text-sm text-gray-700 hover:bg-gray-50"
                 title="Xóa lọc deadline"
@@ -342,34 +471,63 @@ const TasksPage = () => {
         {!loading && (
           <div>
             {/* Empty state */}
-            {pageItems.length === 0 && !error && (
-              <div
-                role="status"
-                aria-live="polite"
-                className="py-8 text-center text-gray-500"
-              >
-                {(items?.length ?? 0) > 0
-                  ? 'Không có task phù hợp với bộ lọc hiện tại.'
-                  : 'Chưa có task nào, hãy tạo task mới.'}
-              </div>
-            )}
+            {((mode === "paged" && tasksForPagination.length === 0) ||
+              (mode === "infinite" && tasksForInfinite.length === 0)) &&
+              !error && (
+                <div
+                  role="status"
+                  aria-live="polite"
+                  className="py-8 text-center text-gray-500"
+                >
+                  {(items?.length ?? 0) > 0
+                    ? "Không có task phù hợp với bộ lọc hiện tại."
+                    : "Chưa có task nào, hãy tạo task mới."}
+                </div>
+              )}
 
-            {/* Dùng react-window tối ưu hiệu năng */}
-            {pageItems.length > 0 && (
+            {/* Paged mode: react-window + pagination */}
+            {mode === "paged" && tasksForPagination.length > 0 && (
               <List
                 rowComponent={TaskRow}
-                rowCount={pageItems.length}
+                rowCount={tasksForPagination.length}
                 rowHeight={ROW_HEIGHT}
                 rowProps={{
-                  tasks: pageItems,
+                  tasks: tasksForPagination,
                   updating,
                   togglingId,
                   toggleDone,
                 }}
                 style={{
-                  width: '100%',
+                  width: "100%",
                   height:
-                    Math.min(pageItems.length, MAX_VISIBLE_ROWS) * ROW_HEIGHT,
+                    Math.min(tasksForPagination.length, MAX_VISIBLE_ROWS) *
+                    ROW_HEIGHT,
+                }}
+              />
+            )}
+
+            {/* Infinite mode: react-window + infinite scroll + loader row */}
+            {mode === "infinite" && tasksForInfinite.length > 0 && (
+              <List
+                rowComponent={InfiniteRow}
+                rowCount={tasksForInfinite.length + (hasMore ? 1 : 0)}
+                rowHeight={ROW_HEIGHT}
+                rowProps={{
+                  tasks: tasksForInfinite,
+                  updating,
+                  togglingId,
+                  toggleDone,
+                  hasMore,
+                  loading,
+                  onLoadMore: loadMore,
+                }}
+                style={{
+                  width: "100%",
+                  height:
+                    Math.min(
+                      tasksForInfinite.length + (hasMore ? 1 : 0),
+                      MAX_VISIBLE_ROWS,
+                    ) * ROW_HEIGHT,
                 }}
               />
             )}
@@ -377,7 +535,7 @@ const TasksPage = () => {
         )}
 
         {/* Pagination */}
-        {totalPages > 1 && (
+        {mode === "paged" && totalPages > 1 && itemsFiltered.length > 0 && (
           <div className="mt-4 flex flex-wrap items-center justify-center gap-1">
             <button
               onClick={goPrev}
@@ -388,7 +546,7 @@ const TasksPage = () => {
             </button>
 
             {pageRange.map((p, idx) =>
-              p === '…' ? (
+              p === "…" ? (
                 <span
                   key={`gap-${idx}`}
                   className="px-2 text-gray-400"
@@ -402,13 +560,13 @@ const TasksPage = () => {
                   onClick={() => goTo(p)}
                   className={`rounded-lg px-3 py-1 text-sm transition-colors ${
                     p === page
-                      ? 'bg-gray-900 text-white'
-                      : 'border border-transparent text-gray-700 hover:bg-gray-100'
+                      ? "bg-gray-900 text-white"
+                      : "border border-transparent text-gray-700 hover:bg-gray-100"
                   }`}
                 >
                   {p}
                 </button>
-              )
+              ),
             )}
 
             <button
