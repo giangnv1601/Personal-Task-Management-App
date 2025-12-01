@@ -6,7 +6,7 @@ import { api } from '@/api/apiService.js'
 
 export async function fetchTasks({ userId, limit = 50, offset = 0 } = {}) {
   const filter = userId ? `?user_id=eq.${userId}&select=*` : '?select=*'
-  const res = await api.get(`/rest/v1/tasks${filter}&limit=${limit}&offset=${offset}`)
+  const res = await api.get(`/rest/v1/tasks${filter}&order=created_at.desc&limit=${limit}&offset=${offset}`)
   return res
 }
 

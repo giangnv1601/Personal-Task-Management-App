@@ -134,11 +134,11 @@ const Dashboard = () => {
           </Link>
         </div>
 
-        {/* Table */}
-        <div className="overflow-x-auto">
+        {/* Table with scroll */}
+        <div className="overflow-x-auto max-h-[500px] overflow-y-auto">
           <table className="min-w-full text-sm table-fixed">
             <thead>
-              <tr className="text-left text-slate-500">
+              <tr className="text-left text-slate-500 sticky top-0 bg-white z-10">
                 <th className="w-[50%] px-5 py-3">Tên</th>
                 <th className="w-[20%] px-2 py-3">Ưu tiên</th>
                 <th className="w-[20%] px-2 py-3">Deadline</th>
