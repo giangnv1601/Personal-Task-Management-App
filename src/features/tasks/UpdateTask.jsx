@@ -222,12 +222,15 @@ export default function UpdateTask() {
 
           {/* Title */}
           <div>
-            <label className="text-sm font-medium mb-1">Tên task</label>
+            <label htmlFor="updateTaskTitle" className="text-sm font-medium mb-1">
+              Tên task
+            </label>
             <input
+              id="updateTaskTitle"
               className="w-full rounded-lg border px-3 py-2"
               placeholder="Nhập tên task…"
               disabled={busy}
-              {...register("title", {
+              {...register('title', {
                 validate: (v) => validateText(v, { min: 1, max: 255 }),
               })}
             />
@@ -240,8 +243,14 @@ export default function UpdateTask() {
 
           {/* Description */}
           <div>
-            <label className="text-sm font-medium mb-1">Mô tả</label>
+            <label 
+              htmlFor="updateTaskDescription" 
+              className="text-sm font-medium mb-1"
+            >
+              Mô tả
+            </label>
             <textarea
+              id="updateTaskDescription"
               rows={2}
               className="w-full rounded-lg border px-3 py-2"
               placeholder="Mô tả ngắn…"

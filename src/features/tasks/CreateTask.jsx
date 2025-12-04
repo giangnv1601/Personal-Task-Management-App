@@ -88,9 +88,15 @@ function CreateTask({ defaultValues, onCancel, onSuccess }) {
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
           {/* Title */}
           <div>
-            <label className="block text-sm mb-1">Tên task</label>
+            <label
+              htmlFor="taskTitle"
+              className="text-sm font-medium mb-1"
+            >
+              Tên task
+            </label>
             <input
-              {...register("title", {
+              id="taskTitle"
+              {...register('title', {
                 validate: (v) => validateText(v, { min: 1, max: 255 }),
               })}
               className="w-full rounded-lg border px-3 py-2"
@@ -106,8 +112,14 @@ function CreateTask({ defaultValues, onCancel, onSuccess }) {
 
           {/* Description */}
           <div>
-            <label className="block text-sm mb-1">Mô tả</label>
+            <label
+              htmlFor="taskDescription"
+              className="text-sm font-medium mb-1"
+            >
+              Mô tả
+            </label>
             <textarea
+              id="taskDescription"
               {...register("description", {
                 validate: (v) => validateText(v, { max: 2000 }),
               })}
@@ -120,7 +132,7 @@ function CreateTask({ defaultValues, onCancel, onSuccess }) {
 
           {/* Priority + Deadline */}
           <div>
-            <label className="block text-sm mb-1">Ưu tiên & Deadline</label>
+            <label className="text-sm font-medium mb-1">Ưu tiên & Deadline</label>
             <div className="flex gap-2">
               <select
                 {...register("priority")}
@@ -174,7 +186,7 @@ function CreateTask({ defaultValues, onCancel, onSuccess }) {
 
           {/* Status */}
           <div>
-            <label className="block text-sm mb-1">Trạng thái</label>
+            <label className="text-sm font-medium mb-1">Trạng thái</label>
             <select
               {...register("status")}
               className="w-full rounded-lg border px-3 py-2"
@@ -228,8 +240,15 @@ function CreateTask({ defaultValues, onCancel, onSuccess }) {
 
           {/* Attachment URL */}
           <div>
-            <label className="block text-sm mb-1">Đính kèm (URL)</label>
+            <label
+              htmlFor="attachmentUrl"
+              className="text-sm font-medium mb-1"
+            >
+              Đính kèm (URL)
+            </label>
             <input
+              id="attachmentUrl"
+              name="attachment_url"
               type="url"
               {...register("attachment_url", {
                 validate: (v) =>
