@@ -1,4 +1,4 @@
-import { useDispatch, useSelector } from 'react-redux'
+import { useDispatch, useSelector, batch } from 'react-redux'
 import { useEffect, useMemo, useState, useTransition } from 'react'
 import {
   fetchTasksThunk,
@@ -103,6 +103,25 @@ export default function useTask({
       clearError: () => dispatch(clearTasksError()),
       optimisticToggleStatus: (taskId) =>
         dispatch(optimisticToggleStatus(taskId)),
+
+      // updatesArray: [{ id, status }, ...]
+      batchToggleStatus: (updatesArray) => {
+        if (!Array.isArray(updatesArray) || updatesArray.length === 0) return
+
+        batch(() => {
+          updatesArray.forEach(({ id, status }) => {
+            dispatch(
+              updateTaskThunk({
+                taskId: id,
+                updates: {
+                  status,
+                  updated_at: new Date().toISOString(),
+                },
+              }),
+            )
+          })
+        })
+      },
     }),
     [dispatch],
   )

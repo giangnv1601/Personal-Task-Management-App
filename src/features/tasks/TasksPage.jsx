@@ -148,8 +148,9 @@ const TasksPage = () => {
   const [deadlineFilter, setDeadlineFilter] = useState("")
   const [togglingId, setTogglingId] = useState(null)
 
-  // Lưu timeout cho từng taskId (debounce gửi API)
-  const toggleTimersRef = useRef({})
+  // buffer batch { [id]: { id, status } }
+  const pendingBatchRef = useRef({})
+  const batchTimerRef = useRef(null)
   // Throttle cho loadMore (tránh spam API)
   const loadingMoreRef = useRef(false)
 
@@ -166,7 +167,7 @@ const TasksPage = () => {
     updating,
     error,
     fetchTasksCursor,
-    updateTask,
+    batchToggleStatus,
     optimisticToggleStatus,
     isFiltering,
     isMutating,
@@ -223,7 +224,7 @@ const TasksPage = () => {
     }
   }, [error])
 
-  // Toggle checkbox với optimistic update + debounce API
+  // Toggle checkbox với batch update
   const toggleDone = useCallback(
     (id) => {
       const task = itemsFiltered.find((t) => t.id === id)
@@ -231,39 +232,34 @@ const TasksPage = () => {
 
       const nextStatus = task.done ? "todo" : "done"
 
-      // cập nhật UI ngay
+      // Cập nhật UI ngay
       optimisticToggleStatus(id)
+      setTogglingId(id)
 
-      // clear timer cũ nếu user toggle nhanh
-      const existingTimer = toggleTimersRef.current[id]
-      if (existingTimer) {
-        clearTimeout(existingTimer)
+      // Gom vào buffer batch
+      pendingBatchRef.current[id] = { id, status: nextStatus }
+
+      // Reset timer nếu đang có
+      if (batchTimerRef.current) {
+        clearTimeout(batchTimerRef.current)
       }
 
-      // timer mới
-      toggleTimersRef.current[id] = setTimeout(async () => {
-        setTogglingId(id)
-        try {
-          const action = await updateTask(id, {
-            status: nextStatus,
-            updated_at: new Date().toISOString(),
-          })
+      // Đặt timer mới
+      batchTimerRef.current = setTimeout(() => {
+        const updates = Object.values(pendingBatchRef.current)
 
-          if (action?.meta?.requestStatus === "fulfilled") {
-            toast.success("Cập nhật trạng thái task thành công!")
-          } else {
-            toast.error("Cập nhật trạng thái task thất bại.")
-          }
-        } catch (err) {
-          console.error(err)
-          toast.error("Có lỗi xảy ra khi cập nhật trạng thái task.")
-        } finally {
-          setTogglingId(null)
-          delete toggleTimersRef.current[id]
-        }
-      }, 250)
+        // clear buffer & timer
+        pendingBatchRef.current = {}
+        batchTimerRef.current = null
+
+        setTogglingId(null)
+
+        // batchToggleStatus cho tất cả task vừa được click
+        batchToggleStatus(updates)
+        toast.success(`Đã cập nhật ${updates.length} task`)
+      }, 2000)
     },
-    [itemsFiltered, updateTask, optimisticToggleStatus],
+    [itemsFiltered, optimisticToggleStatus, batchToggleStatus],
   )
 
   // Pagination chạy trên items đã lọc (chỉ dùng khi mode = paged)
