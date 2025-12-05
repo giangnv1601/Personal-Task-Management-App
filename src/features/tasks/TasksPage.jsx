@@ -18,6 +18,8 @@ import usePagination from "@/hooks/usePagination"
 import useTask from "@/hooks/useTask"
 import { formatDateTime } from "@/utils/date"
 
+import "@/styles/TasksPage.css"
+
 // Số item mỗi trang
 const PAGE_SIZE = 10
 // Chiều cao mỗi row trong react-window
@@ -37,14 +39,11 @@ function TaskRow({ index, style, tasks, updating, togglingId, toggleDone }) {
   const isToggling = updating && togglingId === t.id
 
   return (
-    <div
-      style={style}
-      className="flex items-center justify-between border-b border-gray-200 px-3 py-3 transition-colors hover:bg-gray-50"
-    >
-      <div className="flex w-1/2 items-center gap-3">
+    <div style={style} className="tasks-row">
+      <div className="tasks-row-main">
         <input
           type="checkbox"
-          className="size-4 cursor-pointer"
+          className="tasks-row-checkbox"
           checked={!!t.done}
           onChange={() => toggleDone(t.id)}
           disabled={!!isToggling}
@@ -54,38 +53,38 @@ function TaskRow({ index, style, tasks, updating, togglingId, toggleDone }) {
           <Loader2 className="size-4 animate-spin text-gray-400" />
         )}
         <span
-          className={`text-gray-900 ${
-            t.done ? "line-through text-gray-500" : ""
-          }`}
+          className={
+            "tasks-row-title " + (t.done ? "tasks-row-title-done" : "")
+          }
         >
           {t.title}
         </span>
       </div>
 
-      <div className="w-[140px] text-center">
+      <div className="tasks-row-priority">
         <PriorityTag priority={t.priority} showIcon={false} />
       </div>
 
-      <div className="w-[180px] text-center font-mono text-sm text-gray-700">
+      <div className="tasks-row-deadline">
         {t.deadline ? (
           formatDateTime(t.deadline)
         ) : (
-          <span className="text-gray-400">—</span>
+          <span className="tasks-row-deadline-empty">—</span>
         )}
       </div>
 
-      <div className="flex w-[180px] justify-center gap-2">
+      <div className="tasks-row-actions">
         <Link
           to={`/tasks/detail/${t.id}`}
           aria-label={`Xem chi tiết task ${t.title}`}
-          className="rounded-lg border border-gray-300 px-3 py-1 text-sm text-blue-600 hover:bg-blue-50 transition-colors"
+          className="tasks-row-link"
         >
           Xem
         </Link>
         <Link
           to={`/tasks/edit/${t.id}`}
           aria-label={`Sửa task ${t.title}`}
-          className="rounded-lg border border-gray-300 px-3 py-1 text-sm text-blue-600 hover:bg-blue-50 transition-colors disabled:opacity-50"
+          className="tasks-row-link disabled:opacity-50"
         >
           Sửa
         </Link>
@@ -115,10 +114,7 @@ function InfiniteRow({
     }
 
     return (
-      <div
-        style={style}
-        className="flex items-center justify-center border-b border-gray-200 bg-gray-50 text-xs text-gray-500"
-      >
+      <div style={style} className="tasks-row-loader">
         {loading ? "Đang tải thêm task..." : "Đang chờ tải thêm task..."}
       </div>
     )
@@ -257,7 +253,7 @@ const TasksPage = () => {
         // batchToggleStatus cho tất cả task vừa được click
         batchToggleStatus(updates)
         toast.success(`Đã cập nhật ${updates.length} task`)
-      }, 2000)
+      }, 250)
     },
     [itemsFiltered, optimisticToggleStatus, batchToggleStatus],
   )
@@ -278,7 +274,7 @@ const TasksPage = () => {
   // Reset về trang 1 khi đổi bộ lọc/tìm kiếm
   useEffect(() => {
     setPage(1)
-  }, [debouncedQ, priorityFilter, statusFilter, deadlineFilter])
+  }, [debouncedQ, priorityFilter, statusFilter, deadlineFilter, setPage])
 
   // Lazy fetch theo trang (dùng cho paged mode)
   // Nếu chuyển sang trang có endIdx > số items đã load và hasMore = true → loadMore
@@ -304,7 +300,8 @@ const TasksPage = () => {
     if (loading || loadingMoreRef.current) return
 
     const currentPageItems = pageItems.length
-    const isPageIncomplete = currentPageItems >= 0 && currentPageItems < PAGE_SIZE
+    const isPageIncomplete =
+      currentPageItems >= 0 && currentPageItems < PAGE_SIZE
 
     // FetchTask nếu trang hiện tại chưa đủ items hiển thị full page
     if (isPageIncomplete) {
@@ -317,7 +314,15 @@ const TasksPage = () => {
         loadingMoreRef.current = false
       })
     }
-  }, [mode, user?.id, hasMore, cursor, loading, pageItems.length, fetchTasksCursor])
+  }, [
+    mode,
+    user?.id,
+    hasMore,
+    cursor,
+    loading,
+    pageItems.length,
+    fetchTasksCursor,
+  ])
 
   const handleRetry = () => {
     if (user?.id) {
@@ -335,25 +340,20 @@ const TasksPage = () => {
   const tasksForInfinite = itemsFiltered
 
   return (
-    <div className="p-4">
+    <div className="tasks-page-root">
       {/* Header */}
-      <div className="mb-4 flex items-center justify-between">
-        <h1 className="text-3xl font-extrabold tracking-tight">
-          Danh sách Task
-        </h1>
-        <Link
-          to="/tasks/new"
-          className="inline-flex items-center gap-2 rounded-lg bg-yellow-400 px-4 py-2 font-medium text-gray-900 hover:bg-yellow-500"
-        >
+      <div className="tasks-header">
+        <h1 className="tasks-header-title">Danh sách Task</h1>
+        <Link to="/tasks/new" className="tasks-create-btn">
           <Plus size={16} /> Tạo mới task
         </Link>
       </div>
 
-      <div className="rounded-xl border border-gray-300 bg-white p-4 shadow-sm">
+      <div className="tasks-card">
         {/* Toolbar */}
-        <div className="mb-4 flex flex-wrap gap-3 pb-2">
+        <div className="tasks-toolbar">
           {/* Search */}
-          <div className="relative flex-1 min-w-[220px]">
+          <div className="tasks-search-wrapper">
             <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
               <Search size={16} />
             </span>
@@ -362,14 +362,14 @@ const TasksPage = () => {
               value={q}
               onChange={(e) => setQ(e.target.value)}
               placeholder="Tìm theo tiêu đề"
-              className="w-full rounded-lg border border-gray-300 py-2 pl-9 pr-3 focus:border-gray-400 focus:outline-none"
+              className="tasks-search-input"
             />
           </div>
 
           {/* Status filter */}
-          <div className="relative">
+          <div className="tasks-select-wrapper">
             <select
-              className="appearance-none rounded-lg border border-gray-300 py-2 pl-3 pr-9 focus:border-gray-400 focus:outline-none"
+              className="tasks-select"
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
               aria-label="Lọc theo trạng thái"
@@ -385,9 +385,9 @@ const TasksPage = () => {
           </div>
 
           {/* Priority filter */}
-          <div className="relative">
+          <div className="tasks-select-wrapper">
             <select
-              className="appearance-none rounded-lg border border-gray-300 py-2 pl-3 pr-9 focus:border-gray-400 focus:outline-none"
+              className="tasks-select"
               value={priorityFilter}
               onChange={(e) => setPriorityFilter(e.target.value)}
               aria-label="Lọc theo độ ưu tiên"
@@ -403,19 +403,19 @@ const TasksPage = () => {
           </div>
 
           {/* Deadline filter */}
-          <div className="relative flex items-center gap-2">
+          <div className="tasks-deadline-wrapper">
             <input
               type="date"
               value={deadlineFilter}
               onChange={(e) => setDeadlineFilter(e.target.value)}
-              className="rounded-lg border border-gray-300 py-2 pl-3 pr-3 focus:border-gray-400 focus:outline-none"
+              className="tasks-deadline-input"
               aria-label="Lọc theo deadline (≤ ngày đã chọn)"
             />
             {deadlineFilter && (
               <button
                 onClick={() => setDeadlineFilter("")}
                 aria-label="Xóa lọc deadline"
-                className="rounded-lg border border-gray-300 px-2 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                className="tasks-deadline-clear"
                 title="Xóa lọc deadline"
               >
                 <X size={14} aria-hidden="true" focusable="false" />
@@ -426,10 +426,10 @@ const TasksPage = () => {
 
         {/* Thông tin đang lọc/sort hoặc mutation */}
         {(isFiltering || isMutating) && !loading && (
-          <p className="mb-2 text-xs text-gray-500">
+          <p className="tasks-info-text">
             {isFiltering
-              ? 'Đang áp dụng bộ lọc / sắp xếp...'
-              : 'Đang cập nhật dữ liệu task...'}
+              ? "Đang áp dụng bộ lọc / sắp xếp..."
+              : "Đang cập nhật dữ liệu task..."}
           </p>
         )}
 
@@ -438,14 +438,14 @@ const TasksPage = () => {
           <div
             role="alert"
             aria-live="polite"
-            className="mb-3 flex items-center justify-between rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700"
+            className="tasks-error"
           >
             <span>Đã xảy ra lỗi khi tải danh sách task.</span>
             <button
               type="button"
               onClick={handleRetry}
               aria-label="Thử lại tải danh sách task"
-              className="rounded-md border border-red-300 px-2 py-1 text-xs font-medium hover:bg-red-100"
+              className="tasks-error-retry"
             >
               Thử lại
             </button>
@@ -457,7 +457,7 @@ const TasksPage = () => {
           <div
             role="status"
             aria-live="polite"
-            className="py-8 text-center text-gray-500"
+            className="tasks-loading"
           >
             Đang tải tasks...
           </div>
@@ -473,7 +473,7 @@ const TasksPage = () => {
                 <div
                   role="status"
                   aria-live="polite"
-                  className="py-8 text-center text-gray-500"
+                  className="tasks-empty"
                 >
                   {(items?.length ?? 0) > 0
                     ? "Không có task phù hợp với bộ lọc hiện tại."
@@ -532,11 +532,11 @@ const TasksPage = () => {
 
         {/* Pagination */}
         {mode === "paged" && totalPages > 1 && itemsFiltered.length > 0 && (
-          <div className="mt-4 flex flex-wrap items-center justify-center gap-1">
+          <div className="tasks-pagination">
             <button
               onClick={goPrev}
               disabled={page === 1}
-              className="inline-flex items-center gap-1 rounded-lg border border-gray-300 px-3 py-1 text-sm text-gray-700 transition-opacity enabled:hover:bg-gray-50 disabled:opacity-40"
+              className="tasks-pagination-btn"
             >
               <ChevronLeft size={16} /> Prev
             </button>
@@ -554,11 +554,12 @@ const TasksPage = () => {
                 <button
                   key={p}
                   onClick={() => goTo(p)}
-                  className={`rounded-lg px-3 py-1 text-sm transition-colors ${
-                    p === page
-                      ? "bg-gray-900 text-white"
-                      : "border border-transparent text-gray-700 hover:bg-gray-100"
-                  }`}
+                  className={
+                    "tasks-pagination-page " +
+                    (p === page
+                      ? "tasks-pagination-page-active"
+                      : "tasks-pagination-page-normal")
+                  }
                 >
                   {p}
                 </button>
@@ -568,7 +569,7 @@ const TasksPage = () => {
             <button
               onClick={goNext}
               disabled={page === totalPages}
-              className="inline-flex items-center gap-1 rounded-lg border border-gray-300 px-3 py-1 text-sm text-gray-700 transition-opacity enabled:hover:bg-gray-50 disabled:opacity-40"
+              className="tasks-pagination-btn"
             >
               Next <ChevronRight size={16} />
             </button>

@@ -3,6 +3,7 @@ import { useForm, useFieldArray } from "react-hook-form"
 import { useSelector } from "react-redux"
 import { toast } from "sonner"
 import { useNavigate } from "react-router-dom"
+
 import useTask from "@/hooks/useTask"
 import { toLocalInput, toUTCISOString } from "@/utils/date"
 import { isValidUrl, validateDeadline, validateText } from "@/utils/validate"
@@ -12,6 +13,8 @@ import {
   PRIORITY_LABEL,
   STATUS_LABEL,
 } from "@/constants/task"
+
+import "@/styles/CreateTask.css"
 
 function CreateTask({ defaultValues, onCancel, onSuccess }) {
   const { createTask, creating } = useTask()
@@ -42,7 +45,9 @@ function CreateTask({ defaultValues, onCancel, onSuccess }) {
     formState: { errors },
   } = useForm({ defaultValues: normalizedDefaults })
 
-  useEffect(() => reset(normalizedDefaults), [normalizedDefaults, reset])
+  useEffect(() => {
+    reset(normalizedDefaults)
+  }, [normalizedDefaults, reset])
 
   const { fields, append, remove } = useFieldArray({ control, name: "checklist" })
 
@@ -70,7 +75,9 @@ function CreateTask({ defaultValues, onCancel, onSuccess }) {
       toast.success("Tạo task thành công!")
       reset()
       onSuccess?.(action.payload)
-    } else toast.error(action?.error?.message || "Không thể tạo task")
+    } else {
+      toast.error(action?.error?.message || "Không thể tạo task")
+    }
   }
 
   const handleCancel = () => {
@@ -81,30 +88,38 @@ function CreateTask({ defaultValues, onCancel, onSuccess }) {
   const nowLocalMin = toLocalInput(new Date())
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#E1E5E8] p-6">
-      <div className="max-w-md w-full rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-        <h2 className="mb-4 text-2xl font-semibold text-slate-800">Tạo mới Task</h2>
+    <div className="create-task-page">
+      <div className="create-task-card">
+        <h2 className="create-task-title">Tạo mới Task</h2>
 
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
+        <form
+          onSubmit={handleSubmit(onSubmit)}
+          className="create-task-form"
+          noValidate
+        >
           {/* Title */}
           <div>
             <label
               htmlFor="taskTitle"
-              className="text-sm font-medium mb-1"
+              className="create-task-label"
             >
               Tên task
             </label>
             <input
               id="taskTitle"
-              {...register('title', {
+              {...register("title", {
                 validate: (v) => validateText(v, { min: 1, max: 255 }),
               })}
-              className="w-full rounded-lg border px-3 py-2"
+              className="create-task-input"
               placeholder="Nhập tiêu đề…"
               disabled={creating}
             />
             {errors.title && (
-              <p role="alert" aria-live="polite" className="text-xs text-rose-600">
+              <p
+                role="alert"
+                aria-live="polite"
+                className="create-task-error"
+              >
                 {errors.title.message}
               </p>
             )}
@@ -114,7 +129,7 @@ function CreateTask({ defaultValues, onCancel, onSuccess }) {
           <div>
             <label
               htmlFor="taskDescription"
-              className="text-sm font-medium mb-1"
+              className="create-task-label"
             >
               Mô tả
             </label>
@@ -124,7 +139,7 @@ function CreateTask({ defaultValues, onCancel, onSuccess }) {
                 validate: (v) => validateText(v, { max: 2000 }),
               })}
               rows={2}
-              className="w-full rounded-lg border px-3 py-2"
+              className="create-task-textarea"
               placeholder="Mô tả ngắn…"
               disabled={creating}
             />
@@ -132,11 +147,11 @@ function CreateTask({ defaultValues, onCancel, onSuccess }) {
 
           {/* Priority + Deadline */}
           <div>
-            <label className="text-sm font-medium mb-1">Ưu tiên & Deadline</label>
+            <label className="create-task-label">Ưu tiên &amp; Deadline</label>
             <div className="flex gap-2">
               <select
                 {...register("priority")}
-                className="w-28 rounded-lg border px-3 py-2"
+                className="create-task-select w-28"
                 disabled={creating}
               >
                 {PRIORITIES.map((p) => (
@@ -152,9 +167,10 @@ function CreateTask({ defaultValues, onCancel, onSuccess }) {
                 min={allowPastDeadline ? undefined : nowLocalMin}
                 {...register("deadline", {
                   required: "Chọn deadline",
-                  validate: (v) => validateDeadline(v, { allowPast: allowPastDeadline }),
+                  validate: (v) =>
+                    validateDeadline(v, { allowPast: allowPastDeadline }),
                 })}
-                className="flex-1 rounded-lg border px-3 py-2"
+                className="create-task-input flex-1"
                 disabled={creating}
               />
             </div>
@@ -162,7 +178,7 @@ function CreateTask({ defaultValues, onCancel, onSuccess }) {
               <p
                 role="alert"
                 aria-live="polite"
-                className="text-xs text-rose-600"
+                className="create-task-error"
               >
                 {errors.deadline.message}
               </p>
@@ -177,19 +193,21 @@ function CreateTask({ defaultValues, onCancel, onSuccess }) {
                 className="rounded border"
                 disabled={creating}
               />
-              <label htmlFor="allowPastDeadline" className="text-sm text-gray-600">
+              <label
+                htmlFor="allowPastDeadline"
+                className="text-sm text-gray-600"
+              >
                 Cho phép deadline trong quá khứ
               </label>
             </div>
           </div>
 
-
           {/* Status */}
           <div>
-            <label className="text-sm font-medium mb-1">Trạng thái</label>
+            <label className="create-task-label">Trạng thái</label>
             <select
               {...register("status")}
-              className="w-full rounded-lg border px-3 py-2"
+              className="create-task-select w-full"
               disabled={creating}
             >
               {STATUSES.map((s) => (
@@ -202,18 +220,28 @@ function CreateTask({ defaultValues, onCancel, onSuccess }) {
 
           {/* Checklist */}
           <div>
-            <p className="text-sm font-medium mb-1">Checklist</p>
+            <p className="create-task-label">Checklist</p>
             {fields.map((item, i) => (
-              <div key={item.id} className="flex items-center gap-2 mb-1">
-                <input type="checkbox" {...register(`checklist.${i}.done`)} disabled={creating} />
+              <div key={item.id} className="create-task-checklist-row">
+                <input
+                  type="checkbox"
+                  {...register(`checklist.${i}.done`)}
+                  disabled={creating}
+                />
                 <div className="flex-1">
                   <input
-                    {...register(`checklist.${i}.text`, { required: "Không để trống" })}
-                    className="w-full rounded border px-2 py-1 text-sm"
+                    {...register(`checklist.${i}.text`, {
+                      required: "Không để trống",
+                    })}
+                    className="create-task-checklist-input"
                     disabled={creating}
                   />
                   {errors?.checklist?.[i]?.text && (
-                    <p role="alert" aria-live="polite" className="text-xs text-rose-600 mt-1">
+                    <p
+                      role="alert"
+                      aria-live="polite"
+                      className="create-task-error mt-1"
+                    >
                       {errors.checklist[i].text.message}
                     </p>
                   )}
@@ -221,7 +249,7 @@ function CreateTask({ defaultValues, onCancel, onSuccess }) {
                 <button
                   type="button"
                   onClick={() => remove(i)}
-                  className="text-sm text-red-600"
+                  className="create-task-checklist-remove"
                   disabled={creating}
                 >
                   Xóa
@@ -231,7 +259,7 @@ function CreateTask({ defaultValues, onCancel, onSuccess }) {
             <button
               type="button"
               onClick={() => append({ text: "", done: false })}
-              className="text-indigo-600 text-sm"
+              className="create-task-add-checklist-btn"
               disabled={creating}
             >
               + Thêm checklist
@@ -242,42 +270,45 @@ function CreateTask({ defaultValues, onCancel, onSuccess }) {
           <div>
             <label
               htmlFor="attachmentUrl"
-              className="text-sm font-medium mb-1"
+              className="create-task-label"
             >
               Đính kèm (URL)
             </label>
             <input
               id="attachmentUrl"
-              name="attachment_url"
               type="url"
               {...register("attachment_url", {
                 validate: (v) =>
                   !v || isValidUrl(v) || "URL không hợp lệ",
               })}
               placeholder="https://…"
-              className="w-full rounded-lg border px-3 py-2"
+              className="create-task-input"
               disabled={creating}
             />
             {errors.attachment_url && (
-              <p role="alert" aria-live="polite" className="text-xs text-rose-600">
+              <p
+                role="alert"
+                aria-live="polite"
+                className="create-task-error"
+              >
                 {errors.attachment_url.message}
               </p>
             )}
           </div>
 
           {/* Buttons */}
-          <div className="mt-6 flex items-center gap-3">
+          <div className="create-task-buttons">
             <button
               type="submit"
               disabled={creating}
-              className="rounded-lg bg-indigo-600 px-5 py-2.5 text-white disabled:opacity-50 hover:bg-indigo-500"
+              className="create-task-btn-primary"
             >
               {creating ? "Đang tạo…" : "Tạo mới"}
             </button>
             <button
               type="button"
               onClick={handleCancel}
-              className="rounded-lg border px-5 py-2.5 bg-white hover:bg-slate-50"
+              className="create-task-btn-secondary"
               disabled={creating}
             >
               Huỷ

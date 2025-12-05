@@ -1,11 +1,11 @@
-import "./MainLayout.css"
-
 import { LayoutDashboard, CircleChevronDown, User, LogOut } from "lucide-react"
 import { NavLink, Outlet, useNavigate } from "react-router-dom"
 import { toast } from "sonner"
 
 import IconSquare from "@/components/ui/IconSquare"
 import useAuth from "@/hooks/useAuth.js"
+
+import "@/styles/MainLayout.css"
 
 const MainLayout = () => {
   const navigate = useNavigate()
@@ -27,20 +27,20 @@ const MainLayout = () => {
   }
 
   return (
-    <div className="main-layout">
+    <div className="main-layout-root">
       {/* Sidebar */}
-      <aside className="main-layout__sidebar">
+      <aside className="main-layout-sidebar">
         {/* Logo */}
-        <div className="main-layout__logo">
+        <div className="main-layout-logo">
           <IconSquare />
         </div>
 
         {/* NavBar */}
-        <nav className="main-layout__nav">
+        <nav className="main-layout-nav">
           <NavLink
             to="/dashboard"
             className={({ isActive }) =>
-              `nav-item ${isActive ? "nav-item--active" : "nav-item--inactive"}`
+              `main-layout-nav-link ${isActive ? "main-layout-nav-link-active" : ""}`
             }
           >
             <LayoutDashboard size={22} /> Dashboard
@@ -49,7 +49,7 @@ const MainLayout = () => {
           <NavLink
             to="/tasks"
             className={({ isActive }) =>
-              `nav-item ${isActive ? "nav-item--active" : "nav-item--inactive"}`
+              `main-layout-nav-link ${isActive ? "main-layout-nav-link-active" : ""}`
             }
           >
             <CircleChevronDown size={22} /> Danh sách Task
@@ -58,7 +58,7 @@ const MainLayout = () => {
           <NavLink
             to="/profile"
             className={({ isActive }) =>
-              `nav-item ${isActive ? "nav-item--active" : "nav-item--inactive"}`
+              `main-layout-nav-link ${isActive ? "main-layout-nav-link-active" : ""}`
             }
           >
             <User size={22} /> Hồ sơ cá nhân
@@ -67,7 +67,7 @@ const MainLayout = () => {
           <button
             onClick={handleLogout}
             disabled={loading}
-            className="nav-item nav-item--inactive logout-btn"
+            className="main-layout-logout-btn"
           >
             <LogOut size={22} /> {loading ? "Đang thoát..." : "Đăng xuất"}
           </button>
@@ -75,7 +75,7 @@ const MainLayout = () => {
       </aside>
 
       {/* Nội dung trang */}
-      <main className="main-layout__content">
+      <main className="main-layout-main">
         <Outlet />
       </main>
     </div>

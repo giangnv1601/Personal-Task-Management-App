@@ -1,0 +1,144 @@
+@reference "../index.css";
+
+.tasks-page-root {
+  @apply p-4;
+}
+
+/* Header */
+.tasks-header {
+  @apply mb-4 flex items-center justify-between;
+}
+
+.tasks-header-title {
+  @apply text-3xl font-extrabold tracking-tight;
+}
+
+.tasks-create-btn {
+  @apply inline-flex items-center gap-2 rounded-lg bg-yellow-400 px-4 py-2 font-medium text-gray-900 hover:bg-yellow-500;
+}
+
+/* Card */
+.tasks-card {
+  @apply rounded-xl border border-gray-300 bg-white p-4 shadow-sm;
+}
+
+/* Toolbar */
+.tasks-toolbar {
+  @apply mb-4 flex flex-wrap gap-3 pb-2;
+}
+
+.tasks-search-wrapper {
+  @apply relative flex-1 min-w-[220px];
+}
+
+.tasks-search-input {
+  @apply w-full rounded-lg border border-gray-300 py-2 pl-9 pr-3 focus:border-gray-400 focus:outline-none;
+}
+
+.tasks-select-wrapper {
+  @apply relative;
+}
+
+.tasks-select {
+  @apply appearance-none rounded-lg border border-gray-300 py-2 pl-3 pr-9 focus:border-gray-400 focus:outline-none;
+}
+
+.tasks-deadline-wrapper {
+  @apply relative flex items-center gap-2;
+}
+
+.tasks-deadline-input {
+  @apply rounded-lg border border-gray-300 py-2 pl-3 pr-3 focus:border-gray-400 focus:outline-none;
+}
+
+.tasks-deadline-clear {
+  @apply rounded-lg border border-gray-300 px-2 py-2 text-sm text-gray-700 hover:bg-gray-50;
+}
+
+/* Info / error / empty */
+.tasks-info-text {
+  @apply mb-2 text-xs text-gray-500;
+}
+
+.tasks-error {
+  @apply mb-3 flex items-center justify-between rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700;
+}
+
+.tasks-error-retry {
+  @apply rounded-md border border-red-300 px-2 py-1 text-xs font-medium hover:bg-red-100;
+}
+
+.tasks-loading {
+  @apply py-8 text-center text-gray-500;
+}
+
+.tasks-empty {
+  @apply py-8 text-center text-gray-500;
+}
+
+/* Row styles */
+.tasks-row {
+  @apply flex items-center justify-between border-b border-gray-200 px-3 py-3 transition-colors hover:bg-gray-50;
+}
+
+.tasks-row-main {
+  @apply flex w-1/2 items-center gap-3;
+}
+
+.tasks-row-checkbox {
+  @apply size-4 cursor-pointer;
+}
+
+.tasks-row-title {
+  @apply text-gray-900;
+}
+
+.tasks-row-title-done {
+  @apply line-through text-gray-500;
+}
+
+.tasks-row-priority {
+  @apply w-[140px] text-center;
+}
+
+.tasks-row-deadline {
+  @apply w-[180px] text-center font-mono text-sm text-gray-700;
+}
+
+.tasks-row-deadline-empty {
+  @apply text-gray-400;
+}
+
+.tasks-row-actions {
+  @apply flex w-[180px] justify-center gap-2;
+}
+
+.tasks-row-link {
+  @apply rounded-lg border border-gray-300 px-3 py-1 text-sm text-blue-600 hover:bg-blue-50 transition-colors;
+}
+
+/* Loader row (infinite) */
+.tasks-row-loader {
+  @apply flex items-center justify-center border-b border-gray-200 bg-gray-50 text-xs text-gray-500;
+}
+
+/* Pagination */
+.tasks-pagination {
+  @apply mt-4 flex flex-wrap items-center justify-center gap-1;
+}
+
+.tasks-pagination-btn {
+  @apply inline-flex items-center gap-1 rounded-lg border border-gray-300 px-3 py-1 text-sm text-gray-700 transition-opacity enabled:hover:bg-gray-50 disabled:opacity-40;
+}
+
+.tasks-pagination-page {
+  @apply rounded-lg px-3 py-1 text-sm transition-colors;
+}
+
+.tasks-pagination-page-active {
+  @apply bg-gray-900 text-white;
+}
+
+.tasks-pagination-page-normal {
+  @apply border border-transparent text-gray-700 hover:bg-gray-100;
+}

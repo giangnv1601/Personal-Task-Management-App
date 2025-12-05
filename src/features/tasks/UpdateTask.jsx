@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from "react"
 import { useParams, useNavigate } from "react-router-dom"
 import { useForm, Controller, useFieldArray } from "react-hook-form"
 import { toast } from "sonner"
+
 import { toLocalInput, toUTCISOString } from "@/utils/date"
 import { validateDeadline, validateText } from "@/utils/validate"
 import useTask from "@/hooks/useTask"
@@ -12,6 +13,8 @@ import {
   PRIORITY_LABEL,
   STATUS_LABEL,
 } from "@/constants/task"
+
+import "@/styles/UpdateTask.css"
 
 export default function UpdateTask() {
   const init = useMemo(
@@ -25,7 +28,7 @@ export default function UpdateTask() {
       attachment_url: "",
       checklist: [],
     }),
-    []
+    [],
   )
 
   const { id } = useParams()
@@ -45,7 +48,10 @@ export default function UpdateTask() {
     mode: "onChange",
   })
 
-  const { fields, append, remove } = useFieldArray({ control, name: "checklist" })
+  const { fields, append, remove } = useFieldArray({
+    control,
+    name: "checklist",
+  })
 
   const [isDeleting, setIsDeleting] = useState(false)
   const [confirmType, setConfirmType] = useState(null)
@@ -56,7 +62,6 @@ export default function UpdateTask() {
   const findLocalTask = (taskId) =>
     (items || []).find((it) => String(it.id) === String(taskId))
 
-  // Load task
   useEffect(() => {
     let mounted = true
 
@@ -72,14 +77,13 @@ export default function UpdateTask() {
       try {
         const res = await fetchTasks?.()
         const list = res?.data || res || items || []
-        const after = list.find?.((it) => String(it.id) === String(id)) || findLocalTask(id)
+        const after =
+          list.find?.((it) => String(it.id) === String(id)) || findLocalTask(id)
 
         if (after && mounted) {
           reset({ ...init, ...after })
-        } else {
-          if (mounted && !isDeleting) {
-            toast.error("Không tìm thấy task.")
-          }
+        } else if (mounted && !isDeleting) {
+          toast.error("Không tìm thấy task.")
         }
       } catch (err) {
         if (mounted && !isDeleting) {
@@ -92,7 +96,7 @@ export default function UpdateTask() {
     return () => {
       mounted = false
     }
-  }, [id, fetchTasks, items, reset, init])
+  }, [id, fetchTasks, items, reset, init, isDeleting])
 
   // Cảnh báo khi reload tab khi có thay đổi
   useEffect(() => {
@@ -194,16 +198,21 @@ export default function UpdateTask() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#E1E5E8] p-6">
-      <div className="max-w-md w-full rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-        <h2 className="mb-4 text-2xl font-semibold text-slate-800">Cập nhật Task</h2>
+    <div className="update-task-page">
+      <div className="update-task-card">
+        <h2 className="update-task-title">Cập nhật Task</h2>
 
-        <form className="space-y-4" noValidate onSubmit={handleSubmit(onSubmit)} aria-busy={busy}>
+        <form
+          className="update-task-form"
+          noValidate
+          onSubmit={handleSubmit(onSubmit)}
+          aria-busy={busy}
+        >
           {/* Status */}
           <div>
-            <label className="text-sm font-medium mb-1">Trạng thái</label>
+            <label className="update-task-label">Trạng thái</label>
             <select
-              className="w-full rounded-lg border px-3 py-2"
+              className="update-task-select"
               disabled={busy}
               {...register("status")}
             >
@@ -214,7 +223,11 @@ export default function UpdateTask() {
               ))}
             </select>
             {errors.status && (
-              <p role="alert" aria-live="polite" className="text-sm text-red-600 mt-1">
+              <p
+                role="alert"
+                aria-live="polite"
+                className="update-task-error"
+              >
                 {errors.status.message}
               </p>
             )}
@@ -222,20 +235,27 @@ export default function UpdateTask() {
 
           {/* Title */}
           <div>
-            <label htmlFor="updateTaskTitle" className="text-sm font-medium mb-1">
+            <label
+              htmlFor="updateTaskTitle"
+              className="update-task-label"
+            >
               Tên task
             </label>
             <input
               id="updateTaskTitle"
-              className="w-full rounded-lg border px-3 py-2"
+              className="update-task-input"
               placeholder="Nhập tên task…"
               disabled={busy}
-              {...register('title', {
+              {...register("title", {
                 validate: (v) => validateText(v, { min: 1, max: 255 }),
               })}
             />
             {errors.title && (
-              <p role="alert" aria-live="polite" className="text-sm text-red-600 mt-1">
+              <p
+                role="alert"
+                aria-live="polite"
+                className="update-task-error"
+              >
                 {errors.title.message}
               </p>
             )}
@@ -243,16 +263,16 @@ export default function UpdateTask() {
 
           {/* Description */}
           <div>
-            <label 
-              htmlFor="updateTaskDescription" 
-              className="text-sm font-medium mb-1"
+            <label
+              htmlFor="updateTaskDescription"
+              className="update-task-label"
             >
               Mô tả
             </label>
             <textarea
               id="updateTaskDescription"
               rows={2}
-              className="w-full rounded-lg border px-3 py-2"
+              className="update-task-textarea"
               placeholder="Mô tả ngắn…"
               disabled={busy}
               {...register("description", {
@@ -263,24 +283,27 @@ export default function UpdateTask() {
 
           {/* Deadline */}
           <div>
-            <div className="flex items-center gap-4">
-              <label className="w-28 text-sm font-medium mb-1">Deadline</label>
+            <div className="update-task-deadline-container">
+              <label className="update-task-inline-label">Deadline</label>
               <Controller
                 control={control}
                 name="deadline"
                 rules={{
-                  validate: (v) => validateDeadline(v, { allowPast: allowPastDeadline }),
+                  validate: (v) =>
+                    validateDeadline(v, { allowPast: allowPastDeadline }),
                 }}
                 render={({ field: { value, onChange }, fieldState }) => (
                   <>
                     <input
                       type="datetime-local"
                       step="60"
-                      className="ml-auto w-[260px] rounded-lg border px-3 py-2"
+                      className="update-task-inline-input"
                       value={value ? toLocalInput(value) : ""}
                       onChange={(e) =>
                         onChange(
-                          e.target.value ? toUTCISOString(e.target.value) : null
+                          e.target.value
+                            ? toUTCISOString(e.target.value)
+                            : null,
                         )
                       }
                       disabled={busy}
@@ -289,7 +312,7 @@ export default function UpdateTask() {
                       <p
                         role="alert"
                         aria-live="polite"
-                        className="mt-1 text-sm text-red-600"
+                        className="update-task-error"
                       >
                         {fieldState.error.message}
                       </p>
@@ -299,7 +322,7 @@ export default function UpdateTask() {
               />
             </div>
 
-            <div className="mt-1 ml-28 flex items-center gap-2">
+            <div className="update-task-deadline-checkbox-row">
               <input
                 type="checkbox"
                 id="allowPastDeadlineUpdate"
@@ -310,7 +333,7 @@ export default function UpdateTask() {
               />
               <label
                 htmlFor="allowPastDeadlineUpdate"
-                className="text-sm text-gray-600"
+                className="update-task-deadline-checkbox-label"
               >
                 Cho phép deadline trong quá khứ
               </label>
@@ -319,9 +342,9 @@ export default function UpdateTask() {
 
           {/* Priority */}
           <div className="flex items-center gap-4">
-            <label className="w-28 text-sm font-medium mb-1">Ưu tiên</label>
+            <label className="update-task-inline-label">Ưu tiên</label>
             <select
-              className="ml-auto w-[260px] rounded-lg border px-3 py-2"
+              className="update-task-inline-input"
               disabled={busy}
               {...register("priority")}
             >
@@ -332,7 +355,11 @@ export default function UpdateTask() {
               ))}
             </select>
             {errors.priority && (
-              <p role="alert" aria-live="polite" className="text-sm text-red-600 mt-1">
+              <p
+                role="alert"
+                aria-live="polite"
+                className="update-task-error"
+              >
                 {errors.priority.message}
               </p>
             )}
@@ -340,20 +367,24 @@ export default function UpdateTask() {
 
           {/* Checklist */}
           <div>
-            <p className="text-sm font-medium mb-1">Checklist</p>
+            <p className="update-task-label">Checklist</p>
 
             {fields.map((f, idx) => (
-              <div key={f.id} className="flex items-center gap-2 mb-1">
-                <input type="checkbox" disabled={busy} {...register(`checklist.${idx}.done`)} />
+              <div key={f.id} className="update-task-checklist-row">
                 <input
-                  className="flex-1 rounded border px-2 py-1 text-sm"
+                  type="checkbox"
+                  disabled={busy}
+                  {...register(`checklist.${idx}.done`)}
+                />
+                <input
+                  className="update-task-checklist-input"
                   disabled={busy}
                   placeholder="Nội dung công việc…"
                   {...register(`checklist.${idx}.text`)}
                 />
                 <button
                   type="button"
-                  className="text-sm text-red-600"
+                  className="update-task-checklist-remove"
                   disabled={busy}
                   onClick={() => remove(idx)}
                 >
@@ -365,7 +396,7 @@ export default function UpdateTask() {
             <button
               type="button"
               disabled={busy}
-              className="text-indigo-600 text-sm"
+              className="update-task-add-checklist"
               onClick={() =>
                 append({
                   id:
@@ -382,10 +413,10 @@ export default function UpdateTask() {
 
           {/* Attachment */}
           <div>
-            <label className="text-sm font-medium mb-1">Đính kèm (URL)</label>
+            <label className="update-task-label">Đính kèm (URL)</label>
             <input
               type="url"
-              className="w-full rounded-lg border px-3 py-2"
+              className="update-task-input"
               placeholder="https://…"
               disabled={busy}
               {...register("attachment_url", {
@@ -394,18 +425,22 @@ export default function UpdateTask() {
               })}
             />
             {errors.attachment_url && (
-              <p role="alert" aria-live="polite" className="text-sm text-red-600 mt-1">
+              <p
+                role="alert"
+                aria-live="polite"
+                className="update-task-error"
+              >
                 {errors.attachment_url.message}
               </p>
             )}
           </div>
 
           {/* Buttons */}
-          <div className="mt-6 flex justify-between items-center gap-3">
+          <div className="update-task-buttons">
             <button
               type="submit"
               disabled={busy || !isDirty}
-              className="min-w-[120px] rounded-lg bg-blue-600 px-6 py-2.5 text-white disabled:opacity-50"
+              className="update-task-btn-primary"
             >
               {isSubmitting ? "Đang lưu…" : "Cập nhật"}
             </button>
@@ -413,7 +448,7 @@ export default function UpdateTask() {
             <button
               type="button"
               disabled={busy}
-              className="min-w-[120px] rounded-lg border-2 border-red-500 text-red-600 px-6 py-2.5 hover:bg-red-50"
+              className="update-task-btn-danger"
               onClick={onDelete}
             >
               {isDeleting ? "Đang xoá…" : "Xoá task"}
@@ -422,7 +457,7 @@ export default function UpdateTask() {
             <button
               type="button"
               disabled={busy}
-              className="min-w-[120px] rounded-lg border px-6 py-2.5 bg-white hover:bg-slate-50"
+              className="update-task-btn-secondary"
               onClick={onCancel}
             >
               Huỷ
@@ -431,7 +466,6 @@ export default function UpdateTask() {
         </form>
       </div>
 
-      {/* Confirm Dialog */}
       <ConfirmDialog
         open={!!confirmType}
         title={
