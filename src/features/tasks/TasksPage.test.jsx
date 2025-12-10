@@ -76,8 +76,8 @@ const makeTaskState = (overrides = {}) => ({
   updating: false,
   deleting: false,
   error: null,
-  fetchTasksCursor: jest.fn(),     // để TasksPage gọi
-  updateTask: jest.fn(),           // toggleDone dùng
+  fetchTasksCursor: jest.fn(), // để TasksPage gọi
+  batchToggleStatus: jest.fn(),
   optimisticToggleStatus: jest.fn(),
   isFiltering: false,
   isMutating: false,
@@ -354,7 +354,8 @@ describe('TasksPage (component test)', () => {
       expect(mockUseTask).toHaveBeenCalled()
     })
 
-    const lastCallArgs = mockUseTask.mock.calls[mockUseTask.mock.calls.length - 1][0]
+    const lastCallArgs =
+      mockUseTask.mock.calls[mockUseTask.mock.calls.length - 1][0]
     expect(lastCallArgs.searchText).toBe('hello')
 
     jest.useRealTimers()
@@ -583,12 +584,10 @@ describe('TasksPage (component test)', () => {
     })
   })
 
-  test('toggleDone: optimisticToggleStatus gọi ngay và updateTask gọi sau debounce, toast thành công', async () => {
+  test('toggleDone: optimisticToggleStatus gọi ngay và batchToggleStatus được gọi sau debounce, toast thành công', async () => {
     jest.useFakeTimers()
 
-    const updateTask = jest.fn().mockResolvedValue({
-      meta: { requestStatus: 'fulfilled' },
-    })
+    const batchToggleStatus = jest.fn()
     const optimisticToggleStatus = jest.fn()
 
     const tasks = [
@@ -606,7 +605,7 @@ describe('TasksPage (component test)', () => {
       makeTaskState({
         items: tasks,
         itemsFiltered: tasks,
-        updateTask,
+        batchToggleStatus,
         optimisticToggleStatus,
       }),
     )
@@ -633,39 +632,115 @@ describe('TasksPage (component test)', () => {
     // optimistic update ngay
     expect(optimisticToggleStatus).toHaveBeenCalledWith('t1')
 
-    // Sau 250ms debounce: gọi updateTask
+    // Sau 250ms debounce: gọi batchToggleStatus với 1 update
     act(() => {
       jest.advanceTimersByTime(250)
     })
 
     await waitFor(() => {
-      expect(updateTask).toHaveBeenCalledWith(
-        't1',
-        expect.objectContaining({ status: 'done' }),
-      )
+      expect(batchToggleStatus).toHaveBeenCalledTimes(1)
+      expect(batchToggleStatus).toHaveBeenCalledWith([
+        { id: 't1', status: 'done' },
+      ])
     })
 
     await waitFor(() => {
-      expect(toast.success).toHaveBeenCalledWith(
-        'Cập nhật trạng thái task thành công!',
-      )
+      expect(toast.success).toHaveBeenCalledWith('Đã cập nhật 1 task')
     })
 
     jest.useRealTimers()
   })
 
-  test('toggleDone: updateTask trả rejected → toast error "Cập nhật trạng thái task thất bại."', async () => {
+  test('toggleDone: batch nhiều task trong một lần debounce', async () => {
     jest.useFakeTimers()
 
-    const updateTask = jest.fn().mockResolvedValue({
-      meta: { requestStatus: 'rejected' },
-    })
+    const batchToggleStatus = jest.fn()
     const optimisticToggleStatus = jest.fn()
 
     const tasks = [
       {
         id: 't1',
-        title: 'Task fail',
+        title: 'Task 1',
+        priority: 'high',
+        status: 'todo',
+        done: false,
+        deadline: null,
+      },
+      {
+        id: 't2',
+        title: 'Task 2',
+        priority: 'medium',
+        status: 'todo',
+        done: false,
+        deadline: null,
+      },
+    ]
+
+    mockUseTask.mockReturnValue(
+      makeTaskState({
+        items: tasks,
+        itemsFiltered: tasks,
+        batchToggleStatus,
+        optimisticToggleStatus,
+      }),
+    )
+
+    mockUsePagination.mockReturnValue(
+      makePaginationState({
+        pageItems: tasks,
+      }),
+    )
+
+    render(
+      <MemoryRouter>
+        <TasksPage />
+      </MemoryRouter>,
+    )
+
+    const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime })
+
+    const checkbox1 = screen.getByRole('checkbox', {
+      name: /Hoàn thành task: Task 1/i,
+    })
+    const checkbox2 = screen.getByRole('checkbox', {
+      name: /Hoàn thành task: Task 2/i,
+    })
+
+    await user.click(checkbox1)
+    await user.click(checkbox2)
+
+    act(() => {
+      jest.advanceTimersByTime(250)
+    })
+
+    await waitFor(() => {
+      expect(batchToggleStatus).toHaveBeenCalledTimes(1)
+      const updates = batchToggleStatus.mock.calls[0][0]
+      expect(updates).toEqual(
+        expect.arrayContaining([
+          { id: 't1', status: 'done' },
+          { id: 't2', status: 'done' },
+        ]),
+      )
+    })
+
+    await waitFor(() => {
+      expect(toast.success).toHaveBeenCalledWith('Đã cập nhật 2 task')
+    })
+
+    jest.useRealTimers()
+  })
+
+  test('toggleDone: nhiều lần click cùng một task trong window debounce → chỉ batch một lần cho task đó', async () => {
+    jest.useFakeTimers()
+
+    const batchToggleStatus = jest.fn()
+    const optimisticToggleStatus = jest.fn()
+
+    const tasks = [
+      {
+        id: 't1',
+        title: 'Task toggle',
         priority: 'high',
         status: 'todo',
         done: false,
@@ -677,7 +752,7 @@ describe('TasksPage (component test)', () => {
       makeTaskState({
         items: tasks,
         itemsFiltered: tasks,
-        updateTask,
+        batchToggleStatus,
         optimisticToggleStatus,
       }),
     )
@@ -695,10 +770,13 @@ describe('TasksPage (component test)', () => {
     )
 
     const checkbox = screen.getByRole('checkbox', {
-      name: /Hoàn thành task: Task fail/i,
+      name: /Hoàn thành task: Task toggle/i,
     })
 
     const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime })
+
+    // click 2 lần nhanh trên cùng 1 task
+    await user.click(checkbox)
     await user.click(checkbox)
 
     act(() => {
@@ -706,69 +784,14 @@ describe('TasksPage (component test)', () => {
     })
 
     await waitFor(() => {
-      expect(toast.error).toHaveBeenCalledWith(
-        'Cập nhật trạng thái task thất bại.',
-      )
-    })
-
-    jest.useRealTimers()
-  })
-
-  test('toggleDone: updateTask throw error → toast error "Có lỗi xảy ra..."', async () => {
-    jest.useFakeTimers()
-
-    const updateTask = jest
-      .fn()
-      .mockRejectedValue(new Error('Network bad'))
-    const optimisticToggleStatus = jest.fn()
-
-    const tasks = [
-      {
-        id: 't1',
-        title: 'Task throw',
-        priority: 'high',
-        status: 'todo',
-        done: false,
-        deadline: null,
-      },
-    ]
-
-    mockUseTask.mockReturnValue(
-      makeTaskState({
-        items: tasks,
-        itemsFiltered: tasks,
-        updateTask,
-        optimisticToggleStatus,
-      }),
-    )
-
-    mockUsePagination.mockReturnValue(
-      makePaginationState({
-        pageItems: tasks,
-      }),
-    )
-
-    render(
-      <MemoryRouter>
-        <TasksPage />
-      </MemoryRouter>,
-    )
-
-    const checkbox = screen.getByRole('checkbox', {
-      name: /Hoàn thành task: Task throw/i,
-    })
-
-    const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime })
-    await user.click(checkbox)
-
-    act(() => {
-      jest.advanceTimersByTime(250)
+      expect(batchToggleStatus).toHaveBeenCalledTimes(1)
+      expect(batchToggleStatus).toHaveBeenCalledWith([
+        { id: 't1', status: 'done' },
+      ])
     })
 
     await waitFor(() => {
-      expect(toast.error).toHaveBeenCalledWith(
-        'Có lỗi xảy ra khi cập nhật trạng thái task.',
-      )
+      expect(toast.success).toHaveBeenCalledWith('Đã cập nhật 1 task')
     })
 
     jest.useRealTimers()
