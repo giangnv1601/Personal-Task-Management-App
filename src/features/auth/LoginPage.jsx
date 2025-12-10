@@ -4,6 +4,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom"
 import { toast } from "sonner"
 
 import useAuth from "@/hooks/useAuth.js"
+import "@/styles/LoginPage.css"
 
 const LoginPage = () => {
   const {
@@ -28,7 +29,10 @@ const LoginPage = () => {
       // Redux Toolkit action có meta.requestStatus
       if (res.meta.requestStatus === "rejected") {
         const rawMessage = res.payload || "Đăng nhập thất bại"
-        const message = typeof rawMessage === "string" ? rawMessage : JSON.stringify(rawMessage)
+        const message =
+          typeof rawMessage === "string"
+            ? rawMessage
+            : JSON.stringify(rawMessage)
         // Gán lỗi hiển thị ngay dưới input
         setError("email", { type: "server", message })
         setError("password", { type: "server", message })
@@ -40,25 +44,28 @@ const LoginPage = () => {
       const redirectTo = state?.from?.pathname || "/dashboard"
       navigate(redirectTo, { replace: true })
     } catch (err) {
-      const message = typeof err?.message === "string" ? err.message : String(err)
+      const message =
+        typeof err?.message === "string" ? err.message : String(err)
       toast.error(message || "Không thể đăng nhập, vui lòng thử lại!")
     }
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 p-6">
-      <div className="w-full max-w-sm bg-white rounded-xl shadow-lg p-8">
-        <h1 className="text-3xl font-extrabold text-center mb-6">Đăng nhập tài khoản</h1>
+    <div className="login-page-root">
+      <div className="login-page-card">
+        <h1 className="login-page-title">Đăng nhập tài khoản</h1>
 
         <form
           onSubmit={handleSubmit(onSubmit)}
-          className="space-y-4"
+          className="login-page-form"
           noValidate
           aria-busy={isSubmitting}
         >
           {/* Email */}
           <div>
-            <label htmlFor="email" className="block text-sm font-medium mb-1">Email</label>
+            <label htmlFor="email" className="login-page-label">
+              Email
+            </label>
             <input
               id="email"
               type="email"
@@ -66,7 +73,7 @@ const LoginPage = () => {
               placeholder="Nhập email"
               disabled={isSubmitting}
               aria-invalid={!!errors.email}
-              className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-300 disabled:opacity-60"
+              className="login-page-input"
               {...register("email", {
                 required: "Email không được để trống",
                 pattern: {
@@ -75,12 +82,16 @@ const LoginPage = () => {
                 },
               })}
             />
-            {errors.email && <p className="text-red-500 text-sm mt-1">{errors.email.message}</p>}
+            {errors.email && (
+              <p className="login-page-error">{errors.email.message}</p>
+            )}
           </div>
 
           {/* Mật khẩu */}
           <div>
-            <label htmlFor="password" className="block text-sm font-medium mb-1">Mật khẩu</label>
+            <label htmlFor="password" className="login-page-label">
+              Mật khẩu
+            </label>
             <input
               id="password"
               type="password"
@@ -88,19 +99,28 @@ const LoginPage = () => {
               placeholder="Nhập mật khẩu"
               disabled={isSubmitting}
               aria-invalid={!!errors.password}
-              className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-300 disabled:opacity-60"
-              {...register("password", { required: "Mật khẩu không được để trống" })}
+              className="login-page-input"
+              {...register("password", {
+                required: "Mật khẩu không được để trống",
+              })}
             />
-            {errors.password && <p className="text-red-500 text-sm mt-1">{errors.password.message}</p>}
+            {errors.password && (
+              <p className="login-page-error">{errors.password.message}</p>
+            )}
           </div>
 
-          {/* Ghi nhớ và Quên mật khẩu */}
-          <div className="flex items-center justify-between text-sm">
-            <label className="flex items-center gap-2 text-gray-700">
-              <input type="checkbox" {...register("remember")} className="h-4 w-4" disabled={isSubmitting} />
+          {/* Ghi nhớ + Quên mật khẩu */}
+          <div className="login-page-remember-row">
+            <label className="login-page-remember-label">
+              <input
+                type="checkbox"
+                {...register("remember")}
+                className="login-page-remember-checkbox"
+                disabled={isSubmitting}
+              />
               <span>Nhớ đăng nhập</span>
             </label>
-            <Link to="/forgot-password" className="text-blue-600 hover:underline font-medium">
+            <Link to="/forgot-password" className="login-page-link">
               Quên mật khẩu?
             </Link>
           </div>
@@ -108,12 +128,12 @@ const LoginPage = () => {
           {/* Nút gửi */}
           <button
             type="submit"
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-lg font-medium mt-2 disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            className="login-page-submit-btn"
             disabled={isSubmitting}
           >
             {isSubmitting ? (
               <>
-                <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                <span className="login-page-spinner" />
                 Đang đăng nhập…
               </>
             ) : (
@@ -121,9 +141,9 @@ const LoginPage = () => {
             )}
           </button>
 
-          <div className="text-center text-sm text-gray-600 mt-3">
+          <div className="login-page-footer">
             Chưa có tài khoản?{" "}
-            <Link to="/register" className="text-blue-600 hover:underline font-medium">
+            <Link to="/register" className="login-page-link">
               Đăng ký ngay
             </Link>
           </div>

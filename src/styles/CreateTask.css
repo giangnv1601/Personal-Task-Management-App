@@ -1,0 +1,65 @@
+@reference "../index.css";
+
+.create-task-page {
+  @apply min-h-screen flex items-center justify-center bg-[#E1E5E8] p-6;
+}
+
+.create-task-card {
+  @apply max-w-md w-full rounded-2xl border border-slate-200 bg-white p-6 shadow-sm;
+}
+
+.create-task-title {
+  @apply mb-4 text-2xl font-semibold text-slate-800;
+}
+
+.create-task-form {
+  @apply space-y-4;
+}
+
+.create-task-label {
+  @apply text-sm font-medium mb-1;
+}
+
+.create-task-input {
+  @apply w-full rounded-lg border px-3 py-2;
+}
+
+.create-task-textarea {
+  @apply w-full rounded-lg border px-3 py-2;
+}
+
+.create-task-select {
+  @apply rounded-lg border px-3 py-2;
+}
+
+.create-task-error {
+  @apply text-xs text-rose-600;
+}
+
+.create-task-checklist-row {
+  @apply flex items-center gap-2 mb-1;
+}
+
+.create-task-checklist-input {
+  @apply w-full rounded border px-2 py-1 text-sm;
+}
+
+.create-task-checklist-remove {
+  @apply text-sm text-red-600;
+}
+
+.create-task-add-checklist-btn {
+  @apply text-indigo-600 text-sm;
+}
+
+.create-task-buttons {
+  @apply mt-6 flex items-center gap-3;
+}
+
+.create-task-btn-primary {
+  @apply rounded-lg bg-indigo-600 px-5 py-2.5 text-white disabled:opacity-50 hover:bg-indigo-500;
+}
+
+.create-task-btn-secondary {
+  @apply rounded-lg border px-5 py-2.5 bg-white hover:bg-slate-50;
+}

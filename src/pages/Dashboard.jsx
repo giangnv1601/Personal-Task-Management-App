@@ -3,6 +3,7 @@ import { Plus, CheckCircle2, Circle, AlertCircle } from "lucide-react"
 import { Link, useNavigate } from "react-router-dom"
 
 import { formatDateTime } from "@/utils/date"
+import AvatarDefault from "@/assets/user.webp"
 import IconSquare from "@/components/ui/IconSquare"
 import useTask from "@/hooks/useTask"
 import useAuth from "@/hooks/useAuth"
@@ -107,9 +108,12 @@ const Dashboard = () => {
             {user?.full_name || user?.email || "—"}
           </p>
           <img
-            src={user?.avatarUrl || user?.avatar || "https://t4.ftcdn.net/jpg/07/03/86/11/360_F_703861114_7YxIPnoH8NfmbyEffOziaXy0EO1NpRHD.jpg"}
+            src={user?.avatarUrl || user?.avatar || AvatarDefault}
             alt={user?.full_name || user?.email || "Avatar"}
             className="w-10 h-10 rounded-full bg-slate-200"
+            width={40}
+            height={40}
+            loading="lazy"
           />
         </div>
       </div>
@@ -130,11 +134,11 @@ const Dashboard = () => {
           </Link>
         </div>
 
-        {/* Table */}
-        <div className="overflow-x-auto">
+        {/* Table with scroll */}
+        <div className="overflow-x-auto max-h-[500px] overflow-y-auto">
           <table className="min-w-full text-sm table-fixed">
             <thead>
-              <tr className="text-left text-slate-500">
+              <tr className="text-left text-slate-500 sticky top-0 bg-white z-10">
                 <th className="w-[50%] px-5 py-3">Tên</th>
                 <th className="w-[20%] px-2 py-3">Ưu tiên</th>
                 <th className="w-[20%] px-2 py-3">Deadline</th>

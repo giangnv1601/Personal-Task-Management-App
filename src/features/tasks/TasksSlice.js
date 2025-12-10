@@ -1,5 +1,11 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit'
-import { fetchTasks, createTask, updateTask, deleteTask } from '@/api/taskApi.js'
+import { 
+  fetchTasks, 
+  fetchTasksCursor,
+  createTask, 
+  updateTask, 
+  deleteTask 
+} from '@/api/taskApi.js'
 
 // Xử lý lỗi từ response API
 const buildErrorPayload = (res, fallbackMessage) => {
@@ -31,6 +37,35 @@ export const fetchTasksThunk = createAsyncThunk(
     }
   }
 )
+
+export const fetchTasksCursorThunk = createAsyncThunk(
+  'tasks/fetchCursor',
+  async ({ userId, limit = 20, cursor = null } = {}, { rejectWithValue }) => {
+    try {
+      const res = await fetchTasksCursor({ userId, limit, cursor })
+      if (!res?.ok) {
+        return rejectWithValue(buildErrorPayload(res, 'Fetch tasks (cursor) failed'))
+      }
+
+      const items = res.data || []
+
+      return {
+        items,
+        nextCursor: res.nextCursor ?? null,
+        hasMore: typeof res.hasMore === 'boolean'
+          ? res.hasMore
+          : items.length === limit,
+      }
+    } catch (err) {
+      return rejectWithValue({
+        message: err?.message || 'Network error while fetching tasks (cursor)',
+        status: 0,
+        type: 'network',
+      })
+    }
+  }
+)
+
 
 export const createTaskThunk = createAsyncThunk(
   'tasks/create',
@@ -93,7 +128,9 @@ const initialState = {
   error: null,
   errorType: null,
   errorStatus: null,
-  optimisticBackup: {} // lưu trữ bản backup khi optimistic update
+  cursor: null,
+  hasMore: true,
+  optimisticBackup: {}, // lưu trữ bản backup khi optimistic update
 }
 
 const tasksSlice = createSlice({
@@ -141,6 +178,44 @@ const tasksSlice = createSlice({
         s.loading = false
         const err = a.payload || {
           message: a.error?.message || 'Fetch tasks failed',
+          type: 'unknown',
+          status: null,
+        }
+        s.error = err.message
+        s.errorType = err.type
+        s.errorStatus = err.status
+      })
+
+      // fetch cursor
+      .addCase(fetchTasksCursorThunk.fulfilled, (s, a) => {
+        s.loading = false
+
+        const {
+          items = [],
+          nextCursor = null,
+          hasMore = false,
+        } = a.payload || {}
+
+        const argCursor = a.meta?.arg?.cursor ?? null
+        const isFirstPage = !argCursor // nếu gọi với cursor = null → page đầu
+
+        if (isFirstPage) {
+          // Lần đầu: thay hẳn danh sách
+          s.items = items
+        } else {
+          // Các lần sau: append, tránh trùng id
+          const existingIds = new Set(s.items.map((t) => String(t.id)))
+          const merged = items.filter((t) => !existingIds.has(String(t.id)))
+          s.items.push(...merged)
+        }
+
+        s.cursor = nextCursor
+        s.hasMore = hasMore
+      })
+      .addCase(fetchTasksCursorThunk.rejected, (s, a) => {
+        s.loading = false
+        const err = a.payload || {
+          message: a.error?.message || 'Fetch tasks (cursor) failed',
           type: 'unknown',
           status: null,
         }
@@ -247,7 +322,6 @@ const tasksSlice = createSlice({
 export const {
   clearTasksError,
   optimisticToggleStatus,
-  resetOptimisticBackups
 } = tasksSlice.actions
 
 export default tasksSlice.reducer

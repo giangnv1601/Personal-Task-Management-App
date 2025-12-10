@@ -1,16 +1,19 @@
 import React, { useEffect, useState } from "react"
 import { useNavigate, useParams } from "react-router-dom"
 import { toast } from "sonner"
+
 import useTask from "@/hooks/useTask"
 import { formatDateTime, formatRelativeTime } from "@/utils/date"
 import ConfirmDialog from "@/components/ui/ConfirmDialog"
 import PriorityBadge from "@/components/ui/PriorityBadge"
 import StatusBadge from "@/components/ui/StatusBadge"
 
+import "@/styles/DetailTask.css"
+
 const Row = ({ label, children }) => (
-  <div className="flex items-start gap-1">
-    <div className="w-24 shrink-0 text-slate-600">{label}</div>
-    <div className="text-slate-900">{children}</div>
+  <div className="detail-task-row">
+    <div className="detail-task-row-label">{label}</div>
+    <div className="detail-task-row-value">{children}</div>
   </div>
 )
 
@@ -87,8 +90,8 @@ const DetailTask = () => {
 
   if (loading && !task) {
     return (
-      <div className="min-h-screen flex items-start justify-center bg-[#E1E5E8] p-6">
-        <div className="max-w-md w-full rounded-2xl border border-slate-100 bg-white p-6 shadow-sm text-center">
+      <div className="detail-task-page-top">
+        <div className="detail-task-card-muted-border">
           Đang tải...
         </div>
       </div>
@@ -97,13 +100,13 @@ const DetailTask = () => {
 
   if (!task) {
     return (
-      <div className="min-h-screen flex items-start justify-center bg-[#E1E5E8] p-6">
-        <div className="max-w-md w-full rounded-2xl border border-slate-100 bg-white p-6 shadow-sm text-center">
+      <div className="detail-task-page-top">
+        <div className="detail-task-card-muted-border">
           Không tìm thấy task.
-          <div className="mt-4">
+          <div>
             <button
               onClick={() => navigate("/tasks")}
-              className="rounded-lg border px-4 py-2"
+              className="detail-task-back-btn"
             >
               Quay về danh sách
             </button>
@@ -114,13 +117,13 @@ const DetailTask = () => {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#E1E5E8] p-6">
-      <div className="max-w-md w-full rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+    <div className="detail-task-page">
+      <div className="detail-task-card">
         {/* Title */}
-        <h2 className="text-2xl font-semibold mb-5 text-slate-800">Chi tiết Task</h2>
+        <h2 className="detail-task-title">Chi tiết Task</h2>
 
         {/* Thông tin task */}
-        <div className="p-3 space-y-4 text-[15px] leading-6">
+        <div className="detail-task-body">
           <Row label="Tên task:">
             <div className="font-semibold">{task.title}</div>
           </Row>
@@ -138,18 +141,18 @@ const DetailTask = () => {
           </Row>
 
           <Row label="Deadline:">
-            <div className="font-mono">
+            <div className="detail-task-deadline-text">
               {formatDateTime(task.deadline)}{" "}
-              <span className="ml-2 text-xs text-slate-500">
+              <span className="detail-task-deadline-sub">
                 {formatRelativeTime(task.deadline)}
               </span>
             </div>
           </Row>
 
           <Row label="Ngày tạo:">
-            <div className="font-mono">
+            <div className="detail-task-deadline-text">
               {formatDateTime(task.created_at)}{" "}
-              <span className="ml-2 text-xs text-slate-500">
+              <span className="detail-task-deadline-sub">
                 {formatRelativeTime(task.created_at)}
               </span>
             </div>
@@ -158,11 +161,11 @@ const DetailTask = () => {
           <Row label="Checklist:">
             <div className="mt-1">
               {Array.isArray(task.checklist) && task.checklist.length > 0 ? (
-                <ul className="list-disc ml-5 space-y-1 text-slate-700">
+                <ul className="detail-task-checklist-list">
                   {task.checklist.map((c, idx) => (
                     <li
                       key={idx}
-                      className={c.done ? "line-through text-slate-500" : ""}
+                      className={c.done ? "detail-task-checklist-item-done" : ""}
                     >
                       {c.text}
                     </li>
@@ -177,7 +180,7 @@ const DetailTask = () => {
           {task.attachment_url && (
             <Row label="File đính kèm:">
               <a
-                className="text-indigo-600 underline"
+                className="detail-task-attachment-link"
                 href={task.attachment_url}
                 target="_blank"
                 rel="noreferrer"
@@ -189,12 +192,12 @@ const DetailTask = () => {
         </div>
 
         {/* Hành động */}
-        <div className="border-t border-slate-300 pt-3 flex items-center justify-center gap-3">
+        <div className="detail-task-actions">
           <button
             onClick={handleEdit}
             aria-label="Sửa task"
             disabled={busy}
-            className="min-w-[100px] rounded-lg bg-indigo-600 px-6 py-3 text-white hover:bg-indigo-500 disabled:opacity-50"
+            className="detail-task-btn-primary"
           >
             Sửa
           </button>
@@ -203,7 +206,7 @@ const DetailTask = () => {
             onClick={handleDeleteClick}
             aria-label="Xoá task"
             disabled={busy}
-            className="min-w-[100px] rounded-lg border border-rose-500 text-rose-600 px-6 py-3 hover:bg-rose-50 disabled:opacity-50"
+            className="detail-task-btn-danger"
           >
             {busy ? "Đang xoá…" : "Xoá"}
           </button>
@@ -211,7 +214,7 @@ const DetailTask = () => {
           <button
             onClick={handleClose}
             aria-label="Đóng chi tiết task"
-            className="min-w-[100px] rounded-lg border border-slate-300 px-6 py-3 bg-white text-slate-700 hover:bg-slate-50"
+            className="detail-task-btn-secondary"
           >
             Đóng
           </button>

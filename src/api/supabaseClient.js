@@ -1,6 +1,11 @@
 import axios from 'axios'
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/utils/constants.js'
-import store from '@/app/store.js' // để đọc token từ Redux
+
+let attachedStore = null
+
+export const attachStore = (store) => {
+  attachedStore = store
+}
 
 if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
   const msg = 'Missing SUPABASE_URL or SUPABASE_ANON_KEY.'
@@ -20,7 +25,8 @@ const supabaseApi = axios.create({
 // Lấy token từ Redux hoặc localStorage
 function getAccessToken() {
   try {
-    const state = store.getState?.()
+    // Lấy từ store gắn ngoài 
+    const state = attachedStore?.getState?.()
     const tokenFromRedux =
       state?.auth?.session?.access_token ||
       state?.auth?.access_token ||
@@ -28,7 +34,7 @@ function getAccessToken() {
 
     if (tokenFromRedux) return tokenFromRedux
 
-    // Hoặc bạn tự lưu session vào localStorage:
+    // Hoặc lấy từ localStorage (fallback)
     const raw = localStorage.getItem('sb-session')
     const tokenFromLS = raw ? JSON.parse(raw)?.access_token : null
     return tokenFromLS || null

@@ -1,14 +1,23 @@
 import supabaseApi from '@/api/supabaseClient.js'
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/utils/constants.js'
+
+const isTestEnv = process.env.NODE_ENV === 'test'
 
 const parseErrorMessage = (err) => {
   const data = err?.response?.data
-  const candidate = data?.message ?? data?.error ?? data ?? err?.message ?? String(err)
+  const candidate =
+    data?.message ?? data?.error ?? data ?? err?.message ?? String(err)
+
   if (typeof candidate === 'string') return candidate
+
   try {
-    // prefer common fields if present
     if (data && typeof data === 'object') {
       if (data.msg) return String(data.msg)
-      if (data.error_code) return `${data.error_code}: ${data.msg ?? JSON.stringify(data)}`
+      if (data.error_code) {
+        return `${data.error_code}: ${
+          data.msg ?? JSON.stringify(data)
+        }`
+      }
     }
     return JSON.stringify(candidate)
   } catch {
@@ -41,10 +50,58 @@ const errorResponse = (err) => {
 }
 
 /**
- * Generic request wrapper -> returns unified DTO:
- * { ok: boolean, status: number|null, data: any, error: string|null }
+ * Dùng fetch – chỉ chạy trong môi trường test (Jest + MSW)
+ */
+async function requestWithFetch(method, url, body = null, config = {}) {
+  const headers = {
+    apikey: SUPABASE_ANON_KEY,
+    'Content-Type': 'application/json',
+    ...(config.headers || {}),
+  }
+
+  const init = {
+    method: method.toUpperCase(),
+    headers,
+    ...config,
+  }
+
+  if (body !== null && body !== undefined) {
+    init.body = JSON.stringify(body)
+  }
+
+  const res = await fetch(`${SUPABASE_URL}${url}`, init)
+
+  let data = null
+  try {
+    data = await res.json()
+  } catch {
+    data = null
+  }
+
+  const error =
+    res.ok
+      ? null
+      : (data && (data.message || data.error)) || res.statusText
+
+  return {
+    ok: res.ok,
+    status: res.status,
+    data,
+    error,
+  }
+}
+
+/**
+ * Generic request wrapper -> unified DTO:
+ * { ok, status, data, error }
  */
 export async function request(method, url, body = null, config = {}) {
+  // Khi chạy test: dùng fetch để đi qua MSW/node
+  if (isTestEnv) {
+    return requestWithFetch(method, url, body, config)
+  }
+
+  // Dev/Prod: dùng axios client thật
   try {
     const res = await supabaseApi.request({
       method,
