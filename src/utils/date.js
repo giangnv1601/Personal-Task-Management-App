@@ -50,6 +50,24 @@ export const formatDateTime = (iso) => {
 }
 
 /**
+ * Format ISO date to "DD/MM/YYYY" (vi-VN)
+ * @param {string|Date|null} iso
+ * @returns {string} formatted datetime or "—" on invalid
+ */
+export const formatDate = (iso) => {
+  if (!iso) return "—"
+  const d = new Date(iso)
+  if (isNaN(d.getTime())) return "—"
+
+  const pad = (n) => String(n).padStart(2, "0")
+  const dd = pad(d.getDate())
+  const mm = pad(d.getMonth() + 1)
+  const yyyy = d.getFullYear()
+
+  return `${dd}/${mm}/${yyyy}`
+}
+
+/**
  * Human readable relative time fallback
  * @param {string|Date} iso
  * @returns {string}
