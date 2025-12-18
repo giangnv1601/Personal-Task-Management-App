@@ -1,6 +1,14 @@
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit'
 
-import { loginUser, logoutUser, signupUser, getUserProfile } from '@/api/userApi.js'
+import { 
+  loginUser, 
+  logoutUser, 
+  signupUser, 
+  getUserProfile, 
+  getMe,
+  updateUserProfile,
+  uploadAvatar
+ } from '@/api/userApi.js'
 
 // Khối lưu phiên
 const KS = { 
@@ -94,13 +102,94 @@ export const fetchUserProfileThunk = createAsyncThunk(
   'auth/fetchProfile',
   async (userId, { getState, rejectWithValue }) => {
     const state = getState()
+    const token = state.auth.access_token
     const id = userId || state?.auth?.user?.id
+
     if (!id) return rejectWithValue('Không có userId để lấy profile')
-    const res = await getUserProfile(id)
-    if (!res.ok) return rejectWithValue(res.error || 'Không lấy được user')
-    return res.data
+    if (!token) return rejectWithValue('Không có token xác thực')
+
+    try {
+      const [authRes, profileRes] = await Promise.all([
+        getMe(token),
+        getUserProfile(id)
+      ])
+
+      if (!authRes.ok) {
+        return rejectWithValue(authRes.error || 'Không lấy được thông tin Auth')
+      }
+
+      const authUser = authRes.data
+      const publicProfile = (profileRes.ok && profileRes.data) ? profileRes.data : {}
+
+      const finalUser = {
+        id: publicProfile.id,
+        email: publicProfile.email,
+        full_name: publicProfile.full_name || '',
+        created_at: publicProfile.created_at || authUser.created_at,
+        avatar: authUser.user_metadata?.avatar_url || '',
+        
+        ...publicProfile
+      }
+
+      return finalUser
+
+    } catch (error) {
+      return rejectWithValue(error.message || 'Lỗi hệ thống khi lấy profile')
+    }
   }
 )
+
+// Thunk cập nhập profile
+export const updateUserProfileThunk = createAsyncThunk(
+  'auth/updateProfile',
+  async ({ userId, updates }, { getState, rejectWithValue }) => {
+    const state = getState()
+    const token = state.auth.access_token
+    const refreshToken = state.auth.refresh_token
+    const currentAvatar = state.auth?.user?.avatar || ''
+
+    if (!userId) return rejectWithValue('Không có userId để cập nhật profile')
+    if (!token) return rejectWithValue('Không có token xác thực')
+
+    try {
+      let newAvatarUrl = null
+
+      // Upload Avatar (Storage) + update auth.user_metadata.avatar_url
+      if (updates.avatarFile) {
+        const uploadRes = await uploadAvatar(
+          userId,
+          updates.avatarFile,
+          token,
+          refreshToken
+        )
+
+        if (!uploadRes.ok) {
+          return rejectWithValue(uploadRes.error || 'Lỗi khi upload ảnh đại diện')
+        }
+
+        newAvatarUrl = uploadRes.data
+      }
+
+      // Cập nhập full_name vào bảng users
+      const dbUpdates = { ...updates }
+      delete dbUpdates.avatarFile
+
+      const updateRes = await updateUserProfile(userId, dbUpdates)
+      if (!updateRes.ok) {
+        return rejectWithValue(updateRes.error || 'Lỗi khi cập nhật thông tin người dùng')
+      }
+
+      // Trả về dữ liệu cho hiển thị (không overwrite avatar nếu không upload)
+      return {
+        ...updateRes.data,
+        avatar: newAvatarUrl ?? currentAvatar,
+      }
+    } catch (error) {
+      return rejectWithValue(error.message || 'Lỗi hệ thống khi cập nhật profile')
+    }
+  }
+)
+
 
 // Nạp state ban đầu từ loadInitial()
 const init = loadInitial()
@@ -210,6 +299,29 @@ const authSlice = createSlice({
       .addCase(fetchUserProfileThunk.rejected, (state, action) => {
         state.loading = false
         state.error = action.payload || 'Không thể tải profile'
+      })
+    // Update User Profile
+    builder
+      .addCase(updateUserProfileThunk.pending, (state) => {
+        state.loading = true
+        state.error = null
+      })
+      .addCase(updateUserProfileThunk.fulfilled, (state, action) => {
+        state.loading = false
+        // merge vào user hiện tại
+        state.user = { ...(state.user || {}), ...(action.payload || {}) }
+
+        // persist lại storage (nếu đang authenticated)
+        persistSession({
+          remember: state.remember,
+          access_token: state.access_token,
+          refresh_token: state.refresh_token,
+          user: state.user,
+        })
+      })
+      .addCase(updateUserProfileThunk.rejected, (state, action) => {
+        state.loading = false
+        state.error = action.payload || 'Cập nhật profile thất bại'
       })
   },
 })
