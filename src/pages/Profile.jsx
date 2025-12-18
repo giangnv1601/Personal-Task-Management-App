@@ -1,10 +1,12 @@
 import React, { useEffect, useMemo, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { formatDate } from '@/utils/date'
 import AvatarDefault from '@/assets/user.webp'
 import useAuth from '@/hooks/useAuth'
 import useTask from '@/hooks/useTask'
 
 const Profile = () => {
+  const navigate = useNavigate()
   const {
     user,
     loading: authLoading,
@@ -108,6 +110,7 @@ const Profile = () => {
             >
               <button
                 type="button"
+                onClick={() => navigate(`/profile/edit/${profile.id}`)}
                 className="px-4 py-2 rounded-lg border border-slate-800 text-sm font-medium text-slate-900 bg-white hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-slate-800 focus:ring-offset-2"
               >
                 Sửa thông tin
