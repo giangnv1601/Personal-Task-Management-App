@@ -1,5 +1,6 @@
 import React, { useMemo } from 'react'
 import { Provider } from 'react-redux'
+import { MemoryRouter } from 'react-router-dom'
 
 import Profile from './Profile.jsx'
 
@@ -42,7 +43,7 @@ function createFakeStore({
   }
 }
 
-// Shell bọc Redux Provider cho Profile dùng được useAuth & useTask
+// Shell bọc Redux Provider + MemoryRouter
 function StoryShell({
   user,
   items,
@@ -64,7 +65,9 @@ function StoryShell({
 
   return (
     <Provider store={store}>
-      <Profile />
+      <MemoryRouter initialEntries={['/profile']}> {/* <--- Thêm Router */}
+        <Profile />
+      </MemoryRouter>
     </Provider>
   )
 }
@@ -186,7 +189,6 @@ export const Loading = {
 // 3) Error – lỗi tải hồ sơ
 export const ErrorState = {
   render: () => {
-    // Khi lỗi, có thể user null hoặc rỗng
     const user = null
 
     return (
@@ -200,4 +202,28 @@ export const ErrorState = {
     )
   },
 }
+
+// 4) No Avatar – user không có ảnh đại diện
+export const NoAvatar = {
+  render: () => {
+    const user = {
+      id: 'user-2',
+      full_name: 'Trần Thị B',
+      email: 'tranthib@example.com',
+      created_at: '2024-12-01T08:00:00.000Z',
+      avatar: '',
+    }
+
+    return (
+      <StoryShell
+        user={user}
+        items={Array.from({ length: 5 }, (_, i) => ({ id: `task-${i}`, title: `Task ${i}` }))}
+        authLoading={false}
+        tasksLoading={false}
+        authError={null}
+      />
+    )
+  },
+}
+
 
