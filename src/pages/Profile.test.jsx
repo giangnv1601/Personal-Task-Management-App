@@ -100,8 +100,8 @@ describe("Profile Page (happy + edge)", () => {
       },
     })
 
-    expect(screen.getByText("no_name")).toBeInTheDocument()
-    expect(screen.getByAltText("Ảnh đại diện của no_name")).toBeInTheDocument()
+    expect(screen.getByText("No name")).toBeInTheDocument()
+    expect(screen.getByAltText("Ảnh đại diện của No name")).toBeInTheDocument()
   })
 
   test("render_shouldShowTotalTasksAsZero_whenItemsIsNotArray", () => {

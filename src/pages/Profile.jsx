@@ -31,7 +31,7 @@ const Profile = () => {
 
   const profile = user || {}
 
-  const displayName = profile.full_name || profile.email?.split('@')[0] || 'Người dùng'
+  const displayName = profile.full_name || 'No name'
   const createdAt = profile.created_at || profile.createdAt || null
   const totalTasks = useMemo(
     () => (Array.isArray(items) ? items.length : 0),
