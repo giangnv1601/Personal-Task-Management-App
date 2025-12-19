@@ -1,6 +1,12 @@
 import React from "react"
 import { render, screen, waitFor, within } from "@testing-library/react"
 
+const mockNavigate = jest.fn()
+jest.mock("react-router-dom", () => ({
+  ...jest.requireActual("react-router-dom"),
+  useNavigate: () => mockNavigate,
+}))
+
 jest.mock("@/utils/date", () => ({
   __esModule: true,
   formatDate: (iso) => (iso ? `FMT(${iso})` : "-"),

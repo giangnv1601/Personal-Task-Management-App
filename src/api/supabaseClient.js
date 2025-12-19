@@ -1,4 +1,5 @@
 import axios from 'axios'
+import { createClient } from '@supabase/supabase-js'
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/utils/constants.js'
 
 let attachedStore = null
@@ -48,6 +49,15 @@ supabaseApi.interceptors.request.use((config) => {
   // Nếu có token user → dùng token user; nếu không → fallback anon
   config.headers.Authorization = `Bearer ${userToken || SUPABASE_ANON_KEY}`
   return config
+})
+
+// Supabase JS client để dùng storage
+export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+  auth: {
+    persistSession: false,
+    autoRefreshToken: false,
+    detectSessionInUrl: false,
+  },
 })
 
 export default supabaseApi

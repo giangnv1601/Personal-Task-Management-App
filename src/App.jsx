@@ -16,6 +16,7 @@ const CreateTask = lazy(() => import("@/features/tasks/CreateTask.jsx"))
 const UpdateTask = lazy(() => import("@/features/tasks/UpdateTask.jsx"))
 const DetailTask = lazy(() => import("@/features/tasks/DetailTask.jsx"))
 const Profile = lazy(() => import("@/pages/Profile.jsx"))
+const UpdateProfile = lazy(() => import("@/pages/UpdateProfile.jsx"))
 
 const LazyLoading = (
   <div className="p-6 text-center text-slate-600">
@@ -57,6 +58,7 @@ export default function App() {
             <Route path="/tasks/new" element={<CreateTask />} />
             <Route path="/tasks/edit/:id" element={<UpdateTask />} />
             <Route path="/tasks/detail/:id" element={<DetailTask />} />
+            <Route path="/profile/edit/:id" element={<UpdateProfile />} />
           </Route>
         </Route>
 

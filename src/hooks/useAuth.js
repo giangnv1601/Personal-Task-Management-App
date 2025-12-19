@@ -4,6 +4,7 @@ import {
   loginThunk,
   logoutThunk,
   fetchUserProfileThunk,
+  updateUserProfileThunk,
   selectAuth,
   selectAuthLoading,
   selectAuthError,
@@ -26,6 +27,7 @@ export default function useAuth() {
   const login = (payload) => dispatch(loginThunk(payload))
   const logout = () => dispatch(logoutThunk())
   const fetchProfile = (userId) => dispatch(fetchUserProfileThunk(userId))
+  const updateProfile = (payload) => dispatch(updateUserProfileThunk(payload))
 
   return {
     ...auth,
@@ -36,5 +38,6 @@ export default function useAuth() {
     login,
     logout,
     fetchProfile,
+    updateProfile,
   }
 }
