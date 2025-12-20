@@ -1,5 +1,5 @@
 import React from "react"
-import { Provider } from "react-redux" // <--- Import Provider
+import { Provider } from "react-redux"
 import { MemoryRouter, Routes, Route } from "react-router-dom"
 import { Toaster } from "sonner"
 import UpdateProfile from "@/pages/UpdateProfile.jsx"
@@ -78,7 +78,7 @@ function StoryShell({ authState, initialEntries = ["/profile/edit"] }) {
 }
 
 const meta = {
-  title: "Profile/UpdateProfile",
+  title: "Auth/UpdateProfile",
   component: UpdateProfile,
   tags: ["autodocs"],
   parameters: {
