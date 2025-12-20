@@ -87,3 +87,36 @@ export async function uploadAvatar(userId, file, accessToken, refreshToken) {
     return { ok: false, data: null, error: error?.message || 'Lỗi upload ảnh' }
   }
 }
+
+// Đổi mật khẩu
+export async function changePassword({ email, currentPassword, newPassword } = {}) {
+  if (!email) return { ok: false, data: null, error: "Thiếu email" }
+  if (!currentPassword) return { ok: false, data: null, error: "Thiếu mật khẩu hiện tại" }
+  if (!newPassword) return { ok: false, data: null, error: "Thiếu mật khẩu mới" }
+
+  // Dùng login để xác thực mật khẩu
+  const reauth = await loginUser({ email, password: currentPassword })
+  if (!reauth.ok) {
+    return { ok: false, data: null, error: "Mật khẩu hiện tại không đúng" }
+  }
+
+  const accessToken = reauth.data?.access_token
+  const refreshToken = reauth.data?.refresh_token
+  if (!accessToken) return { ok: false, data: null, error: "Không lấy được access_token" }
+
+  // Chập nhập mật khẩu mới 
+  const res = await api.put(
+    "/auth/v1/user",
+    { password: newPassword },
+    { headers: { Authorization: `Bearer ${accessToken}` } }
+  )
+
+  if (!res.ok) return { ok: false, data: null, error: res.error || "Đổi mật khẩu thất bại" }
+
+  // Trả lại token mới
+  return {
+    ok: true,
+    data: { access_token: accessToken, refresh_token: refreshToken },
+    error: null,
+  }
+}

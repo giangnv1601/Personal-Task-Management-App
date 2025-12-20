@@ -2,29 +2,9 @@ import React from "react"
 import { useForm } from "react-hook-form"
 import { toast } from "sonner"
 import { useNavigate } from "react-router-dom"
+import useAuth from "@/hooks/useAuth.js"
 
 const PASSWORD_RULE = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^\w\s]).{8,}$/
-
-const FAKE_USER = {
-  id: "u_001",
-  email: "demo@gmail.com",
-  password: "OldPass@123",
-}
-
-const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
-
-async function fakeChangePassword({ currentPassword, newPassword }) {
-  await sleep(900)
-
-  if (currentPassword !== FAKE_USER.password) {
-    const err = new Error("Mật khẩu hiện tại không đúng")
-    err.code = "WRONG_CURRENT_PASSWORD"
-    throw err
-  }
-
-  FAKE_USER.password = newPassword
-  return { ok: true }
-}
 
 const ChangePassword = () => {
   const navigate = useNavigate()
@@ -53,6 +33,18 @@ const ChangePassword = () => {
     navigate(-1)
   }
 
+  // Focus field lỗi đầu tiên khi submit fail
+  const onInvalid = (formErrors) => {
+    const first =
+      (formErrors.currentPassword && "currentPassword") ||
+      (formErrors.newPassword && "newPassword") ||
+      (formErrors.confirmNewPassword && "confirmNewPassword")
+
+    if (first) setFocus(first)
+  }
+
+  const { changePassword } = useAuth()
+
   const onSubmit = async (values) => {
     if (values.currentPassword === values.newPassword) {
       setError("newPassword", {
@@ -64,24 +56,26 @@ const ChangePassword = () => {
     }
 
     try {
-      await fakeChangePassword({
+      await changePassword({
         currentPassword: values.currentPassword,
         newPassword: values.newPassword,
-      })
+      }).unwrap()
 
       toast.success("Đổi mật khẩu thành công")
       reset()
-    } catch (e) {
-      if (e?.code === "WRONG_CURRENT_PASSWORD") {
-        setError("currentPassword", {
-          type: "server",
-          message: "Mật khẩu hiện tại không đúng",
-        })
+    } catch (err) {
+      const msg =
+        typeof err === "string"
+          ? err
+          : err?.message || "Đổi mật khẩu thất bại"
+
+      if (msg === "Mật khẩu hiện tại không đúng") {
+        setError("currentPassword", { type: "server", message: msg })
         setFocus("currentPassword")
         return
       }
 
-      toast.error(e?.message || "Đổi mật khẩu thất bại")
+      toast.error(msg)
     }
   }
 
@@ -92,7 +86,7 @@ const ChangePassword = () => {
           Đổi mật khẩu
         </h1>
 
-        <form onSubmit={handleSubmit(onSubmit)} noValidate>
+        <form onSubmit={handleSubmit(onSubmit, onInvalid)} noValidate>
           {/* Mật khẩu hiện tại */}
           <div className="mb-5">
             <label

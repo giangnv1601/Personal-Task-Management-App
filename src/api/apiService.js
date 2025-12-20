@@ -118,6 +118,7 @@ export async function request(method, url, body = null, config = {}) {
 export const api = {
   get: (url, config) => request('get', url, null, config),
   post: (url, body, config) => request('post', url, body, config),
+  put: (url, body, config) => request('put', url, body, config),
   patch: (url, body, config) => request('patch', url, body, config),
   delete: (url, config) => request('delete', url, null, config),
 }

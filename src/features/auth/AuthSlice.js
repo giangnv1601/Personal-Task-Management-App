@@ -7,7 +7,8 @@ import {
   getUserProfile, 
   getMe,
   updateUserProfile,
-  uploadAvatar
+  uploadAvatar,
+  changePassword
  } from '@/api/userApi.js'
 
 // Khối lưu phiên
@@ -190,6 +191,21 @@ export const updateUserProfileThunk = createAsyncThunk(
   }
 )
 
+// Thunk đổi mật khẩu
+export const changePasswordThunk = createAsyncThunk(
+  "auth/changePassword",
+  async ({ currentPassword, newPassword }, { getState, rejectWithValue }) => {
+    const state = getState()
+    const email = state.auth?.user?.email
+
+    const res = await changePassword({ email, currentPassword, newPassword })
+    if (!res.ok) return rejectWithValue(res.error || "Đổi mật khẩu thất bại")
+
+    // trả token mới
+    return { ...res.data }
+  }
+)
+
 
 // Nạp state ban đầu từ loadInitial()
 const init = loadInitial()
@@ -322,6 +338,31 @@ const authSlice = createSlice({
       .addCase(updateUserProfileThunk.rejected, (state, action) => {
         state.loading = false
         state.error = action.payload || 'Cập nhật profile thất bại'
+      })
+    // Change Password
+    builder
+      .addCase(changePasswordThunk.pending, (state) => {
+        state.loading = true
+        state.error = null
+      })
+      .addCase(changePasswordThunk.fulfilled, (state, action) => {
+        state.loading = false
+
+        // cập nhật token
+        state.access_token = action.payload?.access_token ?? state.access_token
+        state.refresh_token = action.payload?.refresh_token ?? state.refresh_token
+        state.isAuthenticated = !!state.access_token
+
+        persistSession({
+          remember: state.remember,
+          access_token: state.access_token,
+          refresh_token: state.refresh_token,
+          user: state.user,
+        })
+      })
+      .addCase(changePasswordThunk.rejected, (state, action) => {
+        state.loading = false
+        state.error = action.payload || "Đổi mật khẩu thất bại"
       })
   },
 })
