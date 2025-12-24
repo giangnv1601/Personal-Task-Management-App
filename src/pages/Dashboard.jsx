@@ -1,0 +1,266 @@
+import { Plus, CheckCircle2, Circle, AlertCircle } from "lucide-react"
+import React, { useEffect, useMemo } from "react"
+import { Link, useNavigate } from "react-router-dom"
+
+import AvatarDefault from "@/assets/user.webp"
+import IconSquare from "@/components/ui/IconSquare"
+import useAuth from "@/hooks/useAuth"
+import useTask from "@/hooks/useTask"
+import { formatDateTime } from "@/utils/date"
+
+function PriorityBadge({ level }) {
+  const map = {
+    high: "text-red-600",
+    medium: "text-amber-600",
+    low: "text-emerald-600",
+  }
+
+  const label = level ? level.charAt(0).toUpperCase() + level.slice(1) : ""
+
+  return <span className={`font-medium ${map[level] || "text-slate-600"}`}>{label}</span>
+}
+
+function DonutChart({
+  values = [3, 5, 2],
+  labels = ["Đã hoàn thành", "Đang làm", "Trễ hạn"],
+  size = 160,
+  ringWidth = 40,
+}) {
+  const total = values.reduce((a, b) => a + b, 0)
+  const percents = values.map((v) => (v / (total || 1)) * 100)
+  const colors = ["#2f8e86", "#345873", "#e57373"]
+  const bg = `conic-gradient(${colors[0]} 0% ${percents[0]}%, ${colors[1]} ${percents[0]}% ${
+    percents[0] + percents[1]
+  }%, ${colors[2]} ${percents[0] + percents[1]}% 100%)`
+
+  return (
+    <div className="flex items-center gap-6">
+      <div className="rounded-full relative" style={{ width: size, height: size, background: bg }}>
+        <div className="absolute bg-white rounded-full" style={{ inset: ringWidth }} />
+      </div>
+      <ul className="space-y-2 text-sm">
+        {labels.map((label, i) => (
+          <li key={label} className="flex items-center gap-2">
+            <span className="inline-block w-3 h-3 rounded-sm" style={{ background: colors[i] }} />
+            <span className="text-slate-600">{label}</span>
+            <span className="ml-2 font-semibold">{values[i]}</span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  )
+}
+
+const Dashboard = () => {
+  const navigate = useNavigate()
+  const { items, loading, error, fetchTasks } = useTask()
+  const { user, isAuthenticated, fetchProfile } = useAuth()
+
+  useEffect(() => {
+    fetchTasks?.()
+  }, [fetchTasks])
+
+  useEffect(() => {
+    if (isAuthenticated && (!user || !user.full_name)) {
+      fetchProfile()
+    }
+  }, [isAuthenticated, user, fetchProfile])
+
+  const list = items || []
+
+  // Tính thống kê
+  const { done, inProgress, overdue } = useMemo(() => {
+    const now = Date.now()
+    let d = 0
+    let ip = 0
+    let od = 0
+
+    for (const t of list) {
+      if (t.status === "done") d++
+      if (t.status === "in_progress") ip++
+
+      if (t.deadline) {
+        const ts = Date.parse(t.deadline)
+        if (!isNaN(ts) && ts < now && t.status !== "done") {
+          od++
+        }
+      }
+    }
+
+    return { done: d, inProgress: ip, overdue: od }
+  }, [list])
+
+  const hasData = list.length > 0
+
+  return (
+    <div className="space-y-6 bg-[#E1E5E8]">
+      {/* Header */}
+      <div className="bg-white rounded-2xl shadow-sm border border-slate-100 px-5 py-4 flex items-center justify-between">
+        {/* Logo + Title */}
+        <div className="flex items-center gap-3">
+          <IconSquare size={44} />
+          <h1 className="text-2xl font-semibold text-slate-800">Dashboard</h1>
+        </div>
+
+        {/* User */}
+        <div className="flex items-center gap-3">
+          <p className="text-slate-700">
+            {user?.full_name || user?.email || "—"}
+          </p>
+          <img
+            src={user?.avatarUrl || user?.avatar || AvatarDefault}
+            alt={user?.full_name || user?.email || "Avatar"}
+            className="w-10 h-10 rounded-full bg-slate-200"
+            width={40}
+            height={40}
+            loading="lazy"
+          />
+        </div>
+      </div>
+
+      {/* Danh sách Task */}
+      <div className="bg-white rounded-2xl shadow-sm border border-slate-100">
+        {/* Title + Button */}
+        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
+          <h2 className="text-lg font-semibold text-slate-800">Danh sách Task</h2>
+          <Link
+            to="/tasks/new"
+            aria-label="Thêm Task"
+            title="Thêm Task"
+            className="inline-flex items-center gap-1 bg-[#5E7280] text-white rounded-xl px-3 py-2 hover:bg-slate-700 transition"
+          >
+            <Plus className="w-5 h-5" aria-hidden="true" focusable="false" />
+            Thêm Task
+          </Link>
+        </div>
+
+        {/* Table with scroll */}
+        <div className="overflow-x-auto max-h-[500px] overflow-y-auto">
+          <table className="min-w-full text-sm table-fixed">
+            <thead>
+              <tr className="text-left text-slate-500 sticky top-0 bg-white z-10">
+                <th className="w-[50%] px-5 py-3">Tên</th>
+                <th className="w-[20%] px-2 py-3">Ưu tiên</th>
+                <th className="w-[20%] px-2 py-3">Deadline</th>
+                <th className="w-[10%] px-2 py-3 text-right"></th>
+              </tr>
+            </thead>
+            <tbody>
+              {loading && (
+                <tr>
+                  <td colSpan={4} className="px-5 py-6 text-center text-slate-500">
+                    <div role="status" aria-live="polite">
+                      Đang tải dữ liệu task…
+                    </div>
+                  </td>
+                </tr>
+              )}
+
+              {!loading && error && (
+                <tr>
+                  <td colSpan={4} className="px-5 py-6 text-center text-rose-500">
+                    <div role="alert" aria-live="polite">
+                      Không thể tải danh sách task. Vui lòng thử lại sau.
+                    </div>
+                  </td>
+                </tr>
+              )}
+
+              {!loading && !error && !hasData && (
+                <tr>
+                  <td colSpan={4} className="px-5 py-6 text-center text-slate-500">
+                    <div role="status" aria-live="polite">Chưa có task nào.</div>
+                  </td>
+                </tr>
+              )}
+
+              {!loading &&
+                !error &&
+                hasData &&
+                list.map((t, idx) => (
+                  <tr
+                    key={t.id}
+                    className={`border-t ${idx === 0 ? "border-t-slate-300" : "border-slate-300"}`}
+                  >
+                    <td className="pl-5 pr-2 py-3 flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        className="accent-slate-700"
+                        checked={t.status === "done"}
+                        readOnly
+                      />
+                      <span
+                        className={`text-slate-800 ${
+                          t.status === "done" ? "line-through text-slate-400" : ""
+                        }`}
+                      >
+                        {t.title}
+                      </span>
+                    </td>
+                    <td className="px-2 py-3">
+                      <PriorityBadge level={t.priority} />
+                    </td>
+                    <td className="px-2 py-3 font-mono text-slate-700">
+                      {t.deadline ? formatDateTime(t.deadline) : "—"}
+                    </td>
+                    <td className="px-5 py-3 text-right">
+                      <button
+                        className="text-slate-600 hover:text-slate-900 font-medium"
+                        onClick={() => navigate(`/tasks/detail/${t.id}`)}
+                        aria-label={`Xem chi tiết task ${t.title}`}
+                        title={`Xem ${t.title}`}
+                      >
+                        Xem
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* Thống kê nhanh */}
+      <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-5">
+        <h2 className="text-lg font-semibold text-slate-800 mb-4">Dashboard thống kê nhanh</h2>
+        <div className="grid md:grid-cols-2 gap-6">
+          {/* Ô số liệu */}
+          <div className="grid grid-cols-2 gap-3">
+            <div className="rounded-xl border border-slate-200 p-4">
+              <p className="text-slate-500 text-sm">Tổng số Task</p>
+              <p className="text-2xl font-semibold mt-1">{list.length}</p>
+            </div>
+            <div className="rounded-xl border border-slate-200 p-4">
+              <p className="text-slate-500 text-sm">Đã hoàn thành</p>
+              <div className="flex items-center gap-2 mt-1">
+                <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                <p className="text-2xl font-semibold">{done}</p>
+              </div>
+            </div>
+            <div className="rounded-xl border border-slate-200 p-4">
+              <p className="text-slate-500 text-sm">Đang làm</p>
+              <div className="flex items-center gap-2 mt-1">
+                <Circle className="w-4 h-4 text-sky-700" />
+                <p className="text-2xl font-semibold">{inProgress}</p>
+              </div>
+            </div>
+            <div className="rounded-xl border border-slate-200 p-4">
+              <p className="text-slate-500 text-sm">Trễ hạn</p>
+              <div className="flex items-center gap-2 mt-1">
+                <AlertCircle className="w-4 h-4 text-rose-600" />
+                <p className="text-2xl font-semibold">{overdue}</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Donut */}
+          <div className="flex items-center justify-center">
+            <DonutChart values={[done, inProgress, overdue]} />
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+export default Dashboard

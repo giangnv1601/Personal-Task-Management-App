@@ -10,7 +10,9 @@ lerna-debug.log*
 node_modules
 dist
 dist-ssr
+coverage/
 *.local
+.env
 
 # Editor directories and files
 .vscode/*
@@ -22,3 +24,12 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+*storybook.log
+storybook-static
+
+# Playwright
+test-results/
+playwright-report/
+blob-report/
+.playwright/

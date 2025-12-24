@@ -1,0 +1,89 @@
+@reference "../index.css";
+
+.update-task-page {
+  @apply min-h-screen flex items-center justify-center bg-[#E1E5E8] p-6;
+}
+
+.update-task-card {
+  @apply max-w-md w-full rounded-2xl border border-slate-200 bg-white p-6 shadow-sm;
+}
+
+.update-task-title {
+  @apply mb-4 text-2xl font-semibold text-slate-800;
+}
+
+.update-task-form {
+  @apply space-y-4;
+}
+
+.update-task-label {
+  @apply text-sm font-medium mb-1;
+}
+
+.update-task-input {
+  @apply w-full rounded-lg border px-3 py-2;
+}
+
+.update-task-textarea {
+  @apply w-full rounded-lg border px-3 py-2;
+}
+
+.update-task-select {
+  @apply w-full rounded-lg border px-3 py-2;
+}
+
+.update-task-inline-label {
+  @apply w-28 text-sm font-medium mb-1;
+}
+
+.update-task-inline-input {
+  @apply ml-auto w-[260px] rounded-lg border px-3 py-2;
+}
+
+.update-task-error {
+  @apply text-sm text-red-600 mt-1;
+}
+
+.update-task-checklist-row {
+  @apply flex items-center gap-2 mb-1;
+}
+
+.update-task-checklist-input {
+  @apply flex-1 rounded border px-2 py-1 text-sm;
+}
+
+.update-task-checklist-remove {
+  @apply text-sm text-red-600;
+}
+
+.update-task-add-checklist {
+  @apply text-indigo-600 text-sm;
+}
+
+.update-task-buttons {
+  @apply mt-6 flex justify-between items-center gap-3;
+}
+
+.update-task-btn-primary {
+  @apply min-w-[120px] rounded-lg bg-blue-600 px-6 py-2.5 text-white disabled:opacity-50;
+}
+
+.update-task-btn-danger {
+  @apply min-w-[120px] rounded-lg border-2 border-red-500 text-red-600 px-6 py-2.5 hover:bg-red-50;
+}
+
+.update-task-btn-secondary {
+  @apply min-w-[120px] rounded-lg border px-6 py-2.5 bg-white hover:bg-slate-50;
+}
+
+.update-task-deadline-container {
+  @apply flex items-center gap-4;
+}
+
+.update-task-deadline-checkbox-row {
+  @apply mt-1 ml-28 flex items-center gap-2;
+}
+
+.update-task-deadline-checkbox-label {
+  @apply text-sm text-gray-600;
+}

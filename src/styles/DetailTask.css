@@ -1,0 +1,77 @@
+@reference "../index.css";
+
+.detail-task-page {
+  @apply min-h-screen flex items-center justify-center bg-[#E1E5E8] p-6;
+}
+
+.detail-task-page-top {
+  @apply min-h-screen flex items-start justify-center bg-[#E1E5E8] p-6;
+}
+
+.detail-task-card {
+  @apply max-w-md w-full rounded-2xl border border-slate-200 bg-white p-6 shadow-sm;
+}
+
+.detail-task-card-muted-border {
+  @apply max-w-md w-full rounded-2xl border border-slate-100 bg-white p-6 shadow-sm text-center;
+}
+
+.detail-task-title {
+  @apply text-2xl font-semibold mb-5 text-slate-800;
+}
+
+.detail-task-body {
+  @apply p-3 space-y-4 text-[15px] leading-6;
+}
+
+.detail-task-row {
+  @apply flex items-start gap-1;
+}
+
+.detail-task-row-label {
+  @apply w-24 shrink-0 text-slate-600;
+}
+
+.detail-task-row-value {
+  @apply text-slate-900;
+}
+
+.detail-task-deadline-text {
+  @apply font-mono;
+}
+
+.detail-task-deadline-sub {
+  @apply ml-2 text-xs text-slate-500;
+}
+
+.detail-task-checklist-list {
+  @apply list-disc ml-5 space-y-1 text-slate-700;
+}
+
+.detail-task-checklist-item-done {
+  @apply line-through text-slate-500;
+}
+
+.detail-task-attachment-link {
+  @apply text-indigo-600 underline;
+}
+
+.detail-task-actions {
+  @apply border-t border-slate-300 pt-3 flex items-center justify-center gap-3;
+}
+
+.detail-task-btn-primary {
+  @apply min-w-[100px] rounded-lg bg-indigo-600 px-6 py-3 text-white hover:bg-indigo-500 disabled:opacity-50;
+}
+
+.detail-task-btn-danger {
+  @apply min-w-[100px] rounded-lg border border-rose-500 text-rose-600 px-6 py-3 hover:bg-rose-50 disabled:opacity-50;
+}
+
+.detail-task-btn-secondary {
+  @apply min-w-[100px] rounded-lg border border-slate-300 px-6 py-3 bg-white text-slate-700 hover:bg-slate-50;
+}
+
+.detail-task-back-btn {
+  @apply mt-4 rounded-lg border px-4 py-2;
+}
