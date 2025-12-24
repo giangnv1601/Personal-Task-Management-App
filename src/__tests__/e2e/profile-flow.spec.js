@@ -1,7 +1,8 @@
-import { test, expect } from "@playwright/test"
+import fs from "fs"
 import path from "path"
 import { fileURLToPath } from "url"
-import fs from "fs"
+
+import { test, expect } from "@playwright/test"
 import dotenv from "dotenv"
 
 dotenv.config()

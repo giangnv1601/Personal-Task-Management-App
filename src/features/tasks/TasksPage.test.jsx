@@ -1,5 +1,4 @@
-/* eslint-disable no-undef */
-import React from 'react'
+ 
 import {
   render,
   screen,
@@ -8,6 +7,7 @@ import {
   act,
 } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import React from 'react'
 import { MemoryRouter } from 'react-router-dom'
 
 // ---- Mock sonner toast (chỉ để không lỗi, không test logic riêng nó) ----
@@ -40,11 +40,11 @@ jest.mock('@/utils/date', () => ({
 
 // ---- Mock react-window/List: render tất cả rows bình thường ----
 jest.mock('react-window', () => ({
-  List: ({ rowComponent: Row, rowCount, rowProps }) => (
+  List: ({ rowComponent: RowComponent, rowCount, rowProps }) => (
     <div data-testid="virtual-list">
       {Array.from({ length: rowCount }).map((_, index) => (
         <div key={index} data-testid="row">
-          <Row index={index} style={{}} {...rowProps} />
+          <RowComponent index={index} style={{}} {...rowProps} />
         </div>
       ))}
     </div>

@@ -203,7 +203,7 @@ const handlers = [
   }),
 
   // GET /auth/v1/user (fetchCurrentUser)
-  http.get('*/auth/v1/user', ({ request }) => {
+  http.get('*/auth/v1/user', () => {
     return HttpResponse.json({ user: mockUser }, { status: 200 });
   }),
 

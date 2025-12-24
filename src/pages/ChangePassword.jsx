@@ -1,7 +1,8 @@
 import React from "react"
 import { useForm } from "react-hook-form"
-import { toast } from "sonner"
 import { useNavigate } from "react-router-dom"
+import { toast } from "sonner"
+
 import useAuth from "@/hooks/useAuth.js"
 
 const PASSWORD_RULE = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^\w\s]).{8,}$/

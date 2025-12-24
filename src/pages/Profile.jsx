@@ -1,9 +1,10 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { formatDate } from '@/utils/date'
+
 import AvatarDefault from '@/assets/user.webp'
 import useAuth from '@/hooks/useAuth'
 import useTask from '@/hooks/useTask'
+import { formatDate } from '@/utils/date'
 
 const Profile = () => {
   const navigate = useNavigate()

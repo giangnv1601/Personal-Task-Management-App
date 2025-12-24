@@ -1,6 +1,6 @@
-/* eslint-disable no-undef */
-import React from "react"
+ 
 import { render, screen, fireEvent, waitFor, within } from "@testing-library/react"
+import React from "react"
 import { MemoryRouter } from "react-router-dom"
 
 // --- Mocks ---
@@ -50,10 +50,11 @@ jest.mock("@/components/ui/ConfirmDialog", () => ({
   },
 }))
 
-import { toast } from "sonner"
-import useTask from "@/hooks/useTask"
 import { useNavigate, useParams } from "react-router-dom"
+import { toast } from "sonner"
+
 import DetailTask from "@/features/tasks/DetailTask"
+import useTask from "@/hooks/useTask"
 
 // ---- Fake data chung ----
 const baseTask = {

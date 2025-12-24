@@ -1,7 +1,7 @@
-/* eslint-disable no-undef */
-import React from "react"
+ 
 import { render, screen, waitFor } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
+import React from "react"
 
 // ---- Mocks ----
 jest.mock("react-redux", () => ({
@@ -81,8 +81,9 @@ jest.mock("@/hooks/useTask", () => ({
 }))
 
 import { useSelector } from "react-redux"
-import { toast } from "sonner"
 import { useNavigate } from "react-router-dom"
+import { toast } from "sonner"
+
 import CreateTask from "@/features/tasks/CreateTask"
 import { toLocalInput, toUTCISOString } from "@/utils/date"
 import { isValidUrl, validateDeadline } from "@/utils/validate"

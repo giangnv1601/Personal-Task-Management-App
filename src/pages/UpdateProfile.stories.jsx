@@ -2,6 +2,7 @@ import React from "react"
 import { Provider } from "react-redux"
 import { MemoryRouter, Routes, Route } from "react-router-dom"
 import { Toaster } from "sonner"
+
 import UpdateProfile from "@/pages/UpdateProfile.jsx"
 
 // Fake Redux Store

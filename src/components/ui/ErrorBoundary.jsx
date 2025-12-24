@@ -1,5 +1,6 @@
-import React from "react"
 import PropTypes from "prop-types"
+import React from "react"
+
 import { getErrorMessage, ERROR_KEYS } from "@/constants/errorMessages"
 
 
@@ -18,7 +19,7 @@ export default class ErrorBoundary extends React.Component {
     this.setState({ error, info })
     // Log lỗi ra console trong dev
     if (process.env.NODE_ENV === "development") {
-      // eslint-disable-next-line no-console
+       
       console.error("ErrorBoundary caught:", error, info)
     }
   }
@@ -35,7 +36,7 @@ export default class ErrorBoundary extends React.Component {
     }
     try {
       await navigator.clipboard.writeText(JSON.stringify(payload, null, 2))
-      // eslint-disable-next-line no-alert
+       
       alert("Chi tiết lỗi đã được copy vào clipboard.")
     } catch {
       // ignore

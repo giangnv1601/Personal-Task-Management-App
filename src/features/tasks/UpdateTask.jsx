@@ -1,11 +1,8 @@
 import React, { useEffect, useMemo, useState } from "react"
-import { useParams, useNavigate } from "react-router-dom"
 import { useForm, Controller, useFieldArray } from "react-hook-form"
+import { useParams, useNavigate } from "react-router-dom"
 import { toast } from "sonner"
 
-import { toLocalInput, toUTCISOString } from "@/utils/date"
-import { validateDeadline, validateText } from "@/utils/validate"
-import useTask from "@/hooks/useTask"
 import ConfirmDialog from "@/components/ui/ConfirmDialog"
 import {
   PRIORITIES,
@@ -13,6 +10,9 @@ import {
   PRIORITY_LABEL,
   STATUS_LABEL,
 } from "@/constants/task"
+import useTask from "@/hooks/useTask"
+import { toLocalInput, toUTCISOString } from "@/utils/date"
+import { validateDeadline, validateText } from "@/utils/validate"
 
 import "@/styles/UpdateTask.css"
 

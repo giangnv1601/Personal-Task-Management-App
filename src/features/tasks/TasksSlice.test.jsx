@@ -1,4 +1,11 @@
 // src/features/tasks/__tests__/TasksSlice.test.jsx
+import {
+  fetchTasks,
+  fetchTasksCursor,
+  createTask,
+  updateTask,
+  deleteTask,
+} from '@/api/taskApi.js'
 import tasksReducer, {
   clearTasksError,
   optimisticToggleStatus,
@@ -9,13 +16,6 @@ import tasksReducer, {
   deleteTaskThunk,
 } from '@/features/tasks/TasksSlice.js'
 
-import {
-  fetchTasks,
-  fetchTasksCursor,
-  createTask,
-  updateTask,
-  deleteTask,
-} from '@/api/taskApi.js'
 
 // Mock toàn bộ API layer
 jest.mock('@/api/taskApi.js', () => ({
