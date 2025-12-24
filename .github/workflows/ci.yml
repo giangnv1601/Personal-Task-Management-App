@@ -33,6 +33,10 @@ jobs:
         run: npx playwright install --with-deps chromium
 
       - name: Run e2e tests
+        env:
+          PW_TEST_EMAIL: ${{ secrets.PW_TEST_EMAIL }}
+          PW_TEST_PASSWORD: ${{ secrets.PW_TEST_PASSWORD }}
+          PW_TEST_NEW_PASSWORD: ${{ secrets.PW_TEST_NEW_PASSWORD }}
         run: npm run test:e2e
 
       - name: Build project
