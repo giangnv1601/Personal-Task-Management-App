@@ -4,6 +4,8 @@ import authReducer, {
   logoutThunk,
   registerThunk,
   fetchUserProfileThunk,
+  updateUserProfileThunk,
+  changePasswordThunk,
   selectAuth,
   selectAuthUser,
   selectAuthLoading,
@@ -16,6 +18,10 @@ import {
   logoutUser,
   signupUser,
   getUserProfile,
+  getMe,
+  updateUserProfile,
+  uploadAvatar,
+  changePassword,
 } from '@/api/userApi.js'
 
 // Mock toàn bộ API user
@@ -24,6 +30,10 @@ jest.mock('@/api/userApi.js', () => ({
   logoutUser: jest.fn(),
   signupUser: jest.fn(),
   getUserProfile: jest.fn(),
+  getMe: jest.fn(),
+  updateUserProfile: jest.fn(),
+  uploadAvatar: jest.fn(),
+  changePassword: jest.fn(),
 }))
 
 // Tạo state ban đầu mẫu
@@ -54,7 +64,6 @@ describe('authSlice – reducers & extraReducers', () => {
     localStorage.setItem('remember_login', 'session')
     sessionStorage.setItem('access_token', 'session-token')
     sessionStorage.setItem('refresh_token', 'session-rt')
-    // user bị hỏng JSON → rơi vào nhánh catch trong loadInitial
     sessionStorage.setItem('user', 'not-json')
 
     const prev = {
@@ -272,7 +281,7 @@ describe('authSlice – reducers & extraReducers', () => {
     expect(next.error).toBeNull()
   })
 
-  test('fetchUserProfileThunk.fulfilled cập nhật user và persistSession khi đã authenticated', () => {
+  test('fetchUserProfileThunk.fulfilled cập nhật user và persistSession', () => {
     const prev = {
       ...makeInitialState(),
       user: { id: 'u1', name: 'Old' },
@@ -282,7 +291,12 @@ describe('authSlice – reducers & extraReducers', () => {
       isAuthenticated: true,
     }
 
-    const payload = { id: 'u1', name: 'New Name' }
+    const payload = { 
+      id: 'u1', 
+      email: 'user@example.com',
+      full_name: 'New Name',
+      avatar: 'https://example.com/avatar.jpg'
+    }
 
     const next = authReducer(prev, {
       type: fetchUserProfileThunk.fulfilled.type,
@@ -308,6 +322,114 @@ describe('authSlice – reducers & extraReducers', () => {
 
     expect(next.loading).toBe(false)
     expect(next.error).toBe('Không thể tải profile')
+  })
+
+  // ========== UPDATE USER PROFILE TESTS ==========
+
+  test('updateUserProfileThunk.pending bật loading & clear error', () => {
+    const prev = { ...makeInitialState(), error: 'old error' }
+    const next = authReducer(prev, { type: updateUserProfileThunk.pending.type })
+
+    expect(next.loading).toBe(true)
+    expect(next.error).toBeNull()
+  })
+
+  test('updateUserProfileThunk.fulfilled merge user data và persist vào storage', () => {
+    const prev = {
+      ...makeInitialState(),
+      user: { id: 'u1', full_name: 'Old Name', avatar: 'old-avatar.jpg' },
+      access_token: 'at-123',
+      refresh_token: 'rt-123',
+      remember: 'local',
+      isAuthenticated: true,
+      loading: true,
+    }
+
+    const payload = {
+      id: 'u1',
+      full_name: 'New Name',
+      avatar: 'new-avatar.jpg',
+    }
+
+    const next = authReducer(prev, {
+      type: updateUserProfileThunk.fulfilled.type,
+      payload,
+    })
+
+    expect(next.loading).toBe(false)
+    expect(next.user).toEqual({
+      id: 'u1',
+      full_name: 'New Name',
+      avatar: 'new-avatar.jpg',
+    })
+
+    const storedUser = JSON.parse(localStorage.getItem('user'))
+    expect(storedUser.full_name).toBe('New Name')
+    expect(storedUser.avatar).toBe('new-avatar.jpg')
+  })
+
+  test('updateUserProfileThunk.rejected set error từ payload', () => {
+    const prev = { ...makeInitialState(), loading: true }
+
+    const next = authReducer(prev, {
+      type: updateUserProfileThunk.rejected.type,
+      payload: 'Cập nhật profile thất bại',
+    })
+
+    expect(next.loading).toBe(false)
+    expect(next.error).toBe('Cập nhật profile thất bại')
+  })
+
+  // ========== CHANGE PASSWORD TESTS ==========
+
+  test('changePasswordThunk.pending bật loading & clear error', () => {
+    const prev = { ...makeInitialState(), error: 'old error' }
+    const next = authReducer(prev, { type: changePasswordThunk.pending.type })
+
+    expect(next.loading).toBe(true)
+    expect(next.error).toBeNull()
+  })
+
+  test('changePasswordThunk.fulfilled cập nhật token mới và persist', () => {
+    const prev = {
+      ...makeInitialState(),
+      user: { id: 'u1', email: 'user@example.com' },
+      access_token: 'old-token',
+      refresh_token: 'old-rt',
+      remember: 'local',
+      isAuthenticated: true,
+      loading: true,
+    }
+
+    const payload = {
+      access_token: 'new-token',
+      refresh_token: 'new-rt',
+    }
+
+    const next = authReducer(prev, {
+      type: changePasswordThunk.fulfilled.type,
+      payload,
+    })
+
+    expect(next.loading).toBe(false)
+    expect(next.access_token).toBe('new-token')
+    expect(next.refresh_token).toBe('new-rt')
+    expect(next.isAuthenticated).toBe(true)
+
+    expect(localStorage.getItem('access_token')).toBe('new-token')
+    expect(localStorage.getItem('refresh_token')).toBe('new-rt')
+  })
+
+  test('changePasswordThunk.rejected set error từ payload', () => {
+    const prev = { ...makeInitialState(), loading: true }
+
+    const next = authReducer(prev, {
+      type: changePasswordThunk.rejected.type,
+      payload: 'Mật khẩu hiện tại không đúng',
+    })
+
+    expect(next.loading).toBe(false)
+    expect(next.error).toBe('Mật khẩu hiện tại không đúng')
   })
 })
 
@@ -429,7 +551,7 @@ describe('authSlice – thunks logic (mock API)', () => {
     expect(rejected.payload).toBe('Đăng nhập thất bại')
   })
 
-  test('logoutThunk: không có token → không gọi logoutUser, trả {ok:true}', async () => {
+  test('logoutThunk: không có token → không gọi logoutUser', async () => {
     const dispatch = jest.fn()
     const getState = () => ({
       auth: { access_token: null },
@@ -548,49 +670,91 @@ describe('authSlice – thunks logic (mock API)', () => {
     expect(rejected.payload).toBe('Đăng ký thất bại')
   })
 
-  test('fetchUserProfileThunk: truyền userId trực tiếp, API ok=true', async () => {
+  // ========== FETCH USER PROFILE TESTS ==========
+
+  test('fetchUserProfileThunk: gọi Promise.all getMe + getUserProfile thành công', async () => {
+    getMe.mockResolvedValue({
+      ok: true,
+      data: {
+        id: 'u1',
+        email: 'user@example.com',
+        created_at: '2024-01-01',
+        user_metadata: {
+          avatar_url: 'https://example.com/avatar.jpg',
+        },
+      },
+    })
+
     getUserProfile.mockResolvedValue({
       ok: true,
-      data: { id: 'u1', name: 'From API' },
+      data: {
+        id: 'u1',
+        email: 'user@example.com',
+        full_name: 'John Doe',
+        created_at: '2024-01-01',
+      },
     })
 
     const dispatch = jest.fn()
     const getState = () => ({
-      auth: { user: { id: 'ignored' } },
+      auth: {
+        user: { id: 'u1' },
+        access_token: 'token-123',
+      },
     })
 
     await fetchUserProfileThunk('u1')(dispatch, getState, undefined)
 
+    expect(getMe).toHaveBeenCalledWith('token-123')
     expect(getUserProfile).toHaveBeenCalledWith('u1')
 
     const fulfilled = dispatch.mock.calls[1][0]
     expect(fulfilled.type).toBe(fetchUserProfileThunk.fulfilled.type)
-    expect(fulfilled.payload).toEqual({ id: 'u1', name: 'From API' })
+    expect(fulfilled.payload).toEqual({
+      id: 'u1',
+      email: 'user@example.com',
+      full_name: 'John Doe',
+      created_at: '2024-01-01',
+      avatar: 'https://example.com/avatar.jpg',
+    })
   })
 
   test('fetchUserProfileThunk: không truyền userId nhưng lấy từ state.auth.user.id', async () => {
+    getMe.mockResolvedValue({
+      ok: true,
+      data: {
+        id: 'u-state',
+        email: 'state@example.com',
+        user_metadata: { avatar_url: '' },
+      },
+    })
+
     getUserProfile.mockResolvedValue({
       ok: true,
-      data: { id: 'u-state', name: 'State User' },
+      data: {
+        id: 'u-state',
+        email: 'state@example.com',
+        full_name: 'State User',
+      },
     })
 
     const dispatch = jest.fn()
     const getState = () => ({
-      auth: { user: { id: 'u-state' } },
+      auth: {
+        user: { id: 'u-state' },
+        access_token: 'token-xyz',
+      },
     })
 
     await fetchUserProfileThunk(undefined)(dispatch, getState, undefined)
 
     expect(getUserProfile).toHaveBeenCalledWith('u-state')
-
-    const fulfilled = dispatch.mock.calls[1][0]
-    expect(fulfilled.type).toBe(fetchUserProfileThunk.fulfilled.type)
   })
 
-  test('fetchUserProfileThunk: không có id ở param và state → reject "Không có userId để lấy profile"', async () => {
+  test('fetchUserProfileThunk: không có userId và không có token → reject', async () => {
     const dispatch = jest.fn()
     const getState = () => ({
-      auth: { user: null },
+      auth: { user: null, access_token: null },
     })
 
     await fetchUserProfileThunk(undefined)(dispatch, getState, undefined)
@@ -600,21 +764,274 @@ describe('authSlice – thunks logic (mock API)', () => {
     expect(rejected.payload).toBe('Không có userId để lấy profile')
   })
 
-  test('fetchUserProfileThunk: API ok=false → rejectedWithValue', async () => {
-    getUserProfile.mockResolvedValue({
+  test('fetchUserProfileThunk: có userId nhưng không có token → reject', async () => {
+    const dispatch = jest.fn()
+    const getState = () => ({
+      auth: { user: { id: 'u1' }, access_token: null },
+    })
+
+    await fetchUserProfileThunk('u1')(dispatch, getState, undefined)
+
+    const rejected = dispatch.mock.calls[1][0]
+    expect(rejected.type).toBe(fetchUserProfileThunk.rejected.type)
+    expect(rejected.payload).toBe('Không có token xác thực')
+  })
+
+  test('fetchUserProfileThunk: getMe fail → rejectedWithValue', async () => {
+    getMe.mockResolvedValue({
       ok: false,
-      error: 'User not found',
+      error: 'Unauthorized',
     })
 
     const dispatch = jest.fn()
     const getState = () => ({
-      auth: { user: { id: 'u-missing' } },
+      auth: {
+        user: { id: 'u1' },
+        access_token: 'token-123',
+      },
     })
 
-    await fetchUserProfileThunk(undefined)(dispatch, getState, undefined)
+    await fetchUserProfileThunk('u1')(dispatch, getState, undefined)
 
     const rejected = dispatch.mock.calls[1][0]
     expect(rejected.type).toBe(fetchUserProfileThunk.rejected.type)
-    expect(rejected.payload).toBe('User not found')
+    expect(rejected.payload).toBe('Unauthorized')
+  })
+
+  // ========== UPDATE USER PROFILE THUNK TESTS ==========
+
+  test('updateUserProfileThunk: cập nhật full_name thành công (không upload avatar)', async () => {
+    updateUserProfile.mockResolvedValue({
+      ok: true,
+      data: {
+        id: 'u1',
+        full_name: 'New Name',
+      },
+    })
+
+    const dispatch = jest.fn()
+    const getState = () => ({
+      auth: {
+        user: { id: 'u1', avatar: 'old-avatar.jpg' },
+        access_token: 'token-123',
+        refresh_token: 'rt-123',
+      },
+    })
+
+    await updateUserProfileThunk({
+      userId: 'u1',
+      updates: { full_name: 'New Name' },
+    })(dispatch, getState, undefined)
+
+    expect(updateUserProfile).toHaveBeenCalledWith('u1', { full_name: 'New Name' })
+
+    const fulfilled = dispatch.mock.calls[1][0]
+    expect(fulfilled.type).toBe(updateUserProfileThunk.fulfilled.type)
+    expect(fulfilled.payload).toEqual({
+      id: 'u1',
+      full_name: 'New Name',
+      avatar: 'old-avatar.jpg', // giữ nguyên avatar cũ
+    })
+  })
+
+  test('updateUserProfileThunk: upload avatar + cập nhật full_name', async () => {
+    const mockFile = new File([''], 'avatar.jpg', { type: 'image/jpeg' })
+
+    uploadAvatar.mockResolvedValue({
+      ok: true,
+      data: 'https://example.com/new-avatar.jpg',
+    })
+
+    updateUserProfile.mockResolvedValue({
+      ok: true,
+      data: {
+        id: 'u1',
+        full_name: 'New Name',
+      },
+    })
+
+    const dispatch = jest.fn()
+    const getState = () => ({
+      auth: {
+        user: { id: 'u1', avatar: 'old-avatar.jpg' },
+        access_token: 'token-123',
+        refresh_token: 'rt-123',
+      },
+    })
+
+    await updateUserProfileThunk({
+      userId: 'u1',
+      updates: {
+        full_name: 'New Name',
+        avatarFile: mockFile,
+      },
+    })(dispatch, getState, undefined)
+
+    expect(uploadAvatar).toHaveBeenCalledWith('u1', mockFile, 'token-123', 'rt-123')
+    expect(updateUserProfile).toHaveBeenCalledWith('u1', { full_name: 'New Name' })
+
+    const fulfilled = dispatch.mock.calls[1][0]
+    expect(fulfilled.payload.avatar).toBe('https://example.com/new-avatar.jpg')
+  })
+
+  test('updateUserProfileThunk: không có userId → reject', async () => {
+    const dispatch = jest.fn()
+    const getState = () => ({
+      auth: { access_token: 'token-123' },
+    })
+
+    await updateUserProfileThunk({
+      userId: null,
+      updates: { full_name: 'Test' },
+    })(dispatch, getState, undefined)
+
+    const rejected = dispatch.mock.calls[1][0]
+    expect(rejected.type).toBe(updateUserProfileThunk.rejected.type)
+    expect(rejected.payload).toBe('Không có userId để cập nhật profile')
+  })
+
+  test('updateUserProfileThunk: không có token → reject', async () => {
+    const dispatch = jest.fn()
+    const getState = () => ({
+      auth: { access_token: null },
+    })
+
+    await updateUserProfileThunk({
+      userId: 'u1',
+      updates: { full_name: 'Test' },
+    })(dispatch, getState, undefined)
+
+    const rejected = dispatch.mock.calls[1][0]
+    expect(rejected.payload).toBe('Không có token xác thực')
+  })
+
+  test('updateUserProfileThunk: uploadAvatar fail → reject', async () => {
+    const mockFile = new File([''], 'avatar.jpg', { type: 'image/jpeg' })
+
+    uploadAvatar.mockResolvedValue({
+      ok: false,
+      error: 'File too large',
+    })
+
+    const dispatch = jest.fn()
+    const getState = () => ({
+      auth: {
+        user: { id: 'u1' },
+        access_token: 'token-123',
+        refresh_token: 'rt-123',
+      },
+    })
+
+    await updateUserProfileThunk({
+      userId: 'u1',
+      updates: { avatarFile: mockFile },
+    })(dispatch, getState, undefined)
+
+    const rejected = dispatch.mock.calls[1][0]
+    expect(rejected.payload).toBe('File too large')
+  })
+
+  test('updateUserProfileThunk: updateUserProfile fail → reject', async () => {
+    updateUserProfile.mockResolvedValue({
+      ok: false,
+      error: 'Database error',
+    })
+
+    const dispatch = jest.fn()
+    const getState = () => ({
+      auth: {
+        user: { id: 'u1' },
+        access_token: 'token-123',
+      },
+    })
+
+    await updateUserProfileThunk({
+      userId: 'u1',
+      updates: { full_name: 'Test' },
+    })(dispatch, getState, undefined)
+
+    const rejected = dispatch.mock.calls[1][0]
+    expect(rejected.payload).toBe('Database error')
+  })
+
+  // ========== CHANGE PASSWORD THUNK TESTS ==========
+
+  test('changePasswordThunk: đổi mật khẩu thành công', async () => {
+    changePassword.mockResolvedValue({
+      ok: true,
+      data: {
+        access_token: 'new-token',
+        refresh_token: 'new-rt',
+      },
+    })
+
+    const dispatch = jest.fn()
+    const getState = () => ({
+      auth: {
+        user: { email: 'user@example.com' },
+      },
+    })
+
+    await changePasswordThunk({
+      currentPassword: 'OldPass@123',
+      newPassword: 'NewPass@456',
+    })(dispatch, getState, undefined)
+
+    expect(changePassword).toHaveBeenCalledWith({
+      email: 'user@example.com',
+      currentPassword: 'OldPass@123',
+      newPassword: 'NewPass@456',
+    })
+
+    const fulfilled = dispatch.mock.calls[1][0]
+    expect(fulfilled.type).toBe(changePasswordThunk.fulfilled.type)
+    expect(fulfilled.payload).toEqual({
+      access_token: 'new-token',
+      refresh_token: 'new-rt',
+    })
+  })
+
+  test('changePasswordThunk: API fail → reject với message', async () => {
+    changePassword.mockResolvedValue({
+      ok: false,
+      error: 'Mật khẩu hiện tại không đúng',
+    })
+
+    const dispatch = jest.fn()
+    const getState = () => ({
+      auth: {
+        user: { email: 'user@example.com' },
+      },
+    })
+
+    await changePasswordThunk({
+      currentPassword: 'WrongPass',
+      newPassword: 'NewPass@456',
+    })(dispatch, getState, undefined)
+
+    const rejected = dispatch.mock.calls[1][0]
+    expect(rejected.type).toBe(changePasswordThunk.rejected.type)
+    expect(rejected.payload).toBe('Mật khẩu hiện tại không đúng')
+  })
+
+  test('changePasswordThunk: API fail không có message → fallback', async () => {
+    changePassword.mockResolvedValue({
+      ok: false,
+    })
+
+    const dispatch = jest.fn()
+    const getState = () => ({
+      auth: {
+        user: { email: 'user@example.com' },
+      },
+    })
+
+    await changePasswordThunk({
+      currentPassword: 'Old@123',
+      newPassword: 'New@456',
+    })(dispatch, getState, undefined)
+
+    const rejected = dispatch.mock.calls[1][0]
+    expect(rejected.payload).toBe('Đổi mật khẩu thất bại')
   })
 })

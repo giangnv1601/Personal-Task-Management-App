@@ -35,7 +35,7 @@ if (!global.TransformStream) {
 }
 
 // Sau khi polyfill xong mới import server
-const { server, resetMockTasks } = require('./test/testServer');
+const { server, resetMockTasks, resetMockUser } = require('./test/testServer');
 
 // MSW lifecycle + clear mocks
 beforeAll(() => server.listen({ onUnhandledRequest: 'warn' }));
@@ -43,6 +43,7 @@ beforeAll(() => server.listen({ onUnhandledRequest: 'warn' }));
 afterEach(() => {
   server.resetHandlers();
   resetMockTasks(); // reset mockTasks sau mỗi test
+  resetMockUser(); // reset mockUser sau mỗi test
   jest.clearAllMocks();
 });
 

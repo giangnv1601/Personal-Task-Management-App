@@ -45,9 +45,14 @@ function getAccessToken() {
 }
 
 supabaseApi.interceptors.request.use((config) => {
-  const userToken = getAccessToken()
-  // Nếu có token user → dùng token user; nếu không → fallback anon
-  config.headers.Authorization = `Bearer ${userToken || SUPABASE_ANON_KEY}`
+  const hasAuth =
+    !!config.headers?.Authorization || !!config.headers?.authorization
+
+  if (!hasAuth) {
+    const userToken = getAccessToken()
+    config.headers.Authorization = `Bearer ${userToken || SUPABASE_ANON_KEY}`
+  }
+
   return config
 })
 

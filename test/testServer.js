@@ -49,14 +49,24 @@ const initialTasks = [
 
 let mockTasks = [...initialTasks];
 
-const mockUser = {
+const initialUser = {
   id: 'user-123',
   email: 'test@example.com',
+  full_name: 'Test User',
+  created_at: '2024-01-01T00:00:00Z',
+  avatar: 'https://example.com/avatar.jpg',
 };
+
+let mockUser = { ...initialUser };
 
 // Reset lại mockTasks về initialTasks
 const resetMockTasks = () => {
   mockTasks = [...initialTasks];
+};
+
+// Reset lại mockUser về initialUser
+const resetMockUser = () => {
+  mockUser = { ...initialUser };
 };
 
 const handlers = [
@@ -201,8 +211,65 @@ const handlers = [
   http.post('*/auth/v1/logout', () => {
     return new HttpResponse(null, { status: 204 });
   }),
+
+  // GET /rest/v1/users?id=eq.xxx (getUserProfile)
+  http.get('*/rest/v1/users', ({ request }) => {
+    const url = new URL(request.url);
+    const id = url.searchParams.get('id')?.replace('eq.', '');
+
+    if (id === mockUser.id) {
+      return HttpResponse.json([mockUser], { status: 200 });
+    }
+
+    return HttpResponse.json([], { status: 200 });
+  }),
+
+  // PATCH /rest/v1/users?id=eq.xxx (updateUserProfile)
+  http.patch('*/rest/v1/users', async ({ request }) => {
+    const url = new URL(request.url);
+    const id = url.searchParams.get('id')?.replace('eq.', '');
+    const updates = await request.json();
+
+    if (id !== mockUser.id) {
+      return HttpResponse.json({ error: 'User not found' }, { status: 404 });
+    }
+
+    mockUser = {
+      ...mockUser,
+      ...updates,
+    };
+
+    return HttpResponse.json([mockUser], { status: 200 });
+  }),
+
+  // PUT /auth/v1/user (changePassword)
+  http.put('*/auth/v1/user', async ({ request }) => {
+    const body = await request.json();
+    
+    if (body.password) {
+      // Giả lập thành công đổi mật khẩu
+      return HttpResponse.json(
+        { message: 'Password updated successfully' },
+        { status: 200 },
+      );
+    }
+
+    return HttpResponse.json(
+      { error: 'Missing password' },
+      { status: 400 },
+    );
+  }),
+
+  // POST /storage/v1/object/avatars/* (uploadAvatar - mock)
+  http.post('*/storage/v1/object/avatars/*', async () => {
+    // Mock upload thành công
+    return HttpResponse.json(
+      { Key: 'avatars/user-123/mock-avatar.jpg' },
+      { status: 200 },
+    );
+  }),
 ];
 
 const server = setupServer(...handlers);
 
-module.exports = { server, resetMockTasks };
+module.exports = { server, resetMockTasks, resetMockUser };
