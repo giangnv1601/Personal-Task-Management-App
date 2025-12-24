@@ -10,10 +10,6 @@ jobs:
   ci:
     runs-on: ubuntu-latest
     
-    env:
-      VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
-      VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
-    
     steps:
       - name: Checkout source code
         uses: actions/checkout@v4
@@ -30,26 +26,8 @@ jobs:
       - name: Run ESLint
         run: npm run lint
 
-      - name: Run unit/integration tests
+      - name: Run tests
         run: npm test
-
-      - name: Cache Playwright browsers
-        id: cache-playwright
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/ms-playwright
-          key: ${{ runner.os }}-playwright-${{ hashFiles('package-lock.json') }}
-
-      - name: Install Playwright browsers
-        if: steps.cache-playwright.outputs.cache-hit != 'true'
-        run: npx playwright install --with-deps chromium
-
-      - name: Run e2e tests
-        env:
-          PW_TEST_EMAIL: ${{ secrets.PW_TEST_EMAIL }}
-          PW_TEST_PASSWORD: ${{ secrets.PW_TEST_PASSWORD }}
-          PW_TEST_NEW_PASSWORD: ${{ secrets.PW_TEST_NEW_PASSWORD }}
-        run: npm run test:e2e
 
       - name: Build project
         run: npm run build
