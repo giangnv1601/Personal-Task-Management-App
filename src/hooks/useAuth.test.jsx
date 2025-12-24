@@ -1,19 +1,16 @@
 import { renderHook, act } from '@testing-library/react'
-import useAuth from './useAuth'
-
-// Mock react-redux
 import { useDispatch, useSelector } from 'react-redux'
 
-// Mock các thunk + selector từ AuthSlice
+import useAuth from './useAuth'
+
+// Mock các thunk từ AuthSlice
 import {
   registerThunk,
   loginThunk,
   logoutThunk,
   fetchUserProfileThunk,
-  selectAuth,
-  selectAuthLoading,
-  selectAuthError,
-  selectIsAuthenticated,
+  updateUserProfileThunk,
+  changePasswordThunk,
 } from '@/features/auth/AuthSlice.js'
 
 // Jest mock module react-redux

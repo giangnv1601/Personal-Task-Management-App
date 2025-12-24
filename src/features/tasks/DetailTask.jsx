@@ -2,11 +2,11 @@ import React, { useEffect, useState } from "react"
 import { useNavigate, useParams } from "react-router-dom"
 import { toast } from "sonner"
 
-import useTask from "@/hooks/useTask"
-import { formatDateTime, formatRelativeTime } from "@/utils/date"
 import ConfirmDialog from "@/components/ui/ConfirmDialog"
 import PriorityBadge from "@/components/ui/PriorityBadge"
 import StatusBadge from "@/components/ui/StatusBadge"
+import useTask from "@/hooks/useTask"
+import { formatDateTime, formatRelativeTime } from "@/utils/date"
 
 import "@/styles/DetailTask.css"
 

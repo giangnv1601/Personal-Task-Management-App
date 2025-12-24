@@ -1,12 +1,13 @@
 /// <reference types="vitest/config" />
+import { fileURLToPath } from 'node:url';
 import path from 'path';
+
+import { storybookTest } from '@storybook/addon-vitest/vitest-plugin';
 import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react-swc';
-import { defineConfig } from 'vite';
-import { visualizer } from 'rollup-plugin-visualizer';
-import { fileURLToPath } from 'node:url';
-import { storybookTest } from '@storybook/addon-vitest/vitest-plugin';
 import { playwright } from '@vitest/browser-playwright';
+import { visualizer } from 'rollup-plugin-visualizer';
+import { defineConfig } from 'vite';
 const dirname = typeof __dirname !== 'undefined' ? __dirname : path.dirname(fileURLToPath(import.meta.url));
 
 // More info at: https://storybook.js.org/docs/next/writing-tests/integrations/vitest-addon
@@ -25,7 +26,7 @@ export default defineConfig({
   })].filter(Boolean),
   resolve: {
     alias: {
-      // eslint-disable-next-line no-undef
+       
       '@': path.resolve(__dirname, './src')
     }
   },

@@ -1,5 +1,6 @@
-import axios from 'axios'
 import { createClient } from '@supabase/supabase-js'
+import axios from 'axios'
+
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/utils/constants.js'
 
 let attachedStore = null

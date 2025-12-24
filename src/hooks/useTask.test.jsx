@@ -1,6 +1,8 @@
 import { renderHook, act, waitFor } from '@testing-library/react'
-import useTask from './useTask'
 import { useDispatch, useSelector } from 'react-redux'
+
+import useTask from './useTask'
+
 import {
   fetchTasksThunk,
   fetchTasksCursorThunk,

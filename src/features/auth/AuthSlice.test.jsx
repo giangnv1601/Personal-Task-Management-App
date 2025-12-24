@@ -1,3 +1,13 @@
+import {
+  loginUser,
+  logoutUser,
+  signupUser,
+  getUserProfile,
+  getMe,
+  updateUserProfile,
+  uploadAvatar,
+  changePassword,
+} from '@/api/userApi.js'
 import authReducer, {
   hydrateFromStorage,
   loginThunk,
@@ -13,16 +23,6 @@ import authReducer, {
   selectIsAuthenticated,
 } from '@/features/auth/AuthSlice.js'
 
-import {
-  loginUser,
-  logoutUser,
-  signupUser,
-  getUserProfile,
-  getMe,
-  updateUserProfile,
-  uploadAvatar,
-  changePassword,
-} from '@/api/userApi.js'
 
 // Mock toàn bộ API user
 jest.mock('@/api/userApi.js', () => ({

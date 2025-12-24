@@ -2,10 +2,11 @@ import React, { useRef, useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
+
 import AvatarDefault from '@/assets/user.webp'
-import { formatDate } from '@/utils/date'
-import useAuth from '@/hooks/useAuth'
 import ConfirmDialog from '@/components/ui/ConfirmDialog'
+import useAuth from '@/hooks/useAuth'
+import { formatDate } from '@/utils/date'
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024 // 5MB
 const ALLOWED_FILE_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/jpg']

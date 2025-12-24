@@ -1,19 +1,18 @@
+import { configureStore } from "@reduxjs/toolkit"
+import { render, screen, waitFor } from "@testing-library/react"
+import userEvent from "@testing-library/user-event"
 import React from "react"
 import { Provider } from "react-redux"
-import { configureStore } from "@reduxjs/toolkit"
 import {
   MemoryRouter,
   Routes,
   Route,
 } from "react-router-dom"
-import { render, screen, waitFor } from "@testing-library/react"
-import userEvent from "@testing-library/user-event"
 
 import authReducer from "@/features/auth/AuthSlice.js"
-import tasksReducer from "@/features/tasks/TasksSlice.js"
-
-import TasksPage from "@/features/tasks/TasksPage.jsx"
 import CreateTask from "@/features/tasks/CreateTask.jsx"
+import TasksPage from "@/features/tasks/TasksPage.jsx"
+import tasksReducer from "@/features/tasks/TasksSlice.js"
 import UpdateTask from "@/features/tasks/UpdateTask.jsx"
 
 // Tạo store test dùng reducer thật

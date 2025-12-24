@@ -1,7 +1,8 @@
 import { configureStore } from '@reduxjs/toolkit'
+
+import { attachStore } from '@/api/supabaseClient.js'
 import authReducer from '@/features/auth/AuthSlice.js'
 import tasksReducer from '@/features/tasks/TasksSlice.js'
-import { attachStore } from '@/api/supabaseClient.js'
 
 const store = configureStore({
   reducer: {

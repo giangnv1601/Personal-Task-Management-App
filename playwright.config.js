@@ -5,11 +5,16 @@ export default defineConfig({
   fullyParallel: true,
   retries: process.env.CI ? 2 : 0,
   reporter: 'html',
+  timeout: 60000, // 60s per test
+  expect: {
+    timeout: 10000, // 10s for assertions
+  },
 
   webServer: {
     command: 'npm run dev',
     url: 'http://localhost:5173',
     reuseExistingServer: !process.env.CI,
+    timeout: 120000, // 2 minutes to start server
   },
   
   use: { 

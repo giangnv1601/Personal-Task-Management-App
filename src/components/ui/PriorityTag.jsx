@@ -1,6 +1,6 @@
-import React from "react"
-import PropTypes from "prop-types"
 import { CircleAlert, AlertTriangle, CheckCircle } from "lucide-react"
+import PropTypes from "prop-types"
+import React from "react"
 
 const SIZE_STYLES = {
   sm: "px-2 py-0.5 text-xs",
