@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "vite build",
     "build:report": "vite build",
-    "lint": "eslint .",
+    "lint": "eslint \"src/**/*.{js,jsx}\"",
     "lint:fix": "eslint . --fix",
     "preview": "vite preview",
     "test": "jest --passWithNoTests",

@@ -11,7 +11,7 @@ if (!global.BroadcastChannel) {
     constructor(name) {
       this.name = name;
     }
-    postMessage(_msg) {}
+    postMessage() {}
     close() {}
     addEventListener() {}
     removeEventListener() {}
