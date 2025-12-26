@@ -83,7 +83,7 @@ test(
     await user.click(editButton)
 
     // Chờ trang UpdateProfile load
-    await screen.findByText("Sửa thông tin cá nhân (Profile)")
+    await screen.findByText("Sửa thông tin cá nhân")
 
     // ==== CẬP NHẬT FULL NAME ====
     const fullNameInput = screen.getByPlaceholderText(/nhập họ tên/i)
