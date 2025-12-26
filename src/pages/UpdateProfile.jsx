@@ -200,7 +200,7 @@ const UpdateProfile = () => {
         <main className="bg-white rounded-2xl shadow-md px-6 py-8 w-full max-w-sm">
           {/* Tiêu đề */}
           <h1 className="text-2xl font-semibold text-center mb-8">
-            Sửa thông tin cá nhân
+            Sửa thông tin cá nhân (Profile)
           </h1>
 
           <form onSubmit={handleSubmit(onSubmit)} noValidate>
